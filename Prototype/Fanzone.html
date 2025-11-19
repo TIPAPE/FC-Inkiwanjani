@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Fan Zone</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        .content-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .content-box h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--black);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Montserrat', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-primary:hover {
+            background: var(--dark-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Comment Item */
+        .comment-item {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--gold);
+        }
+
+        .comment-item .name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-item .text {
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-item .date {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Poll Results */
+        .poll-results {
+            margin-top: 1rem;
+        }
+
+        .poll-results h4 {
+            margin-bottom: 0.5rem;
+            color: var(--black);
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--gold);
+            color: var(--black);
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Fan Zone</h2>
+        
+        <!-- Man of the Match Poll -->
+        <div class="content-box">
+            <h3>Vote for Man of the Match</h3>
+            <form onsubmit="submitPoll(event)">
+                <div class="form-group">
+                    <select id="pollPlayer" required>
+                        <option value="">Select player...</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Cast Vote</button>
+            </form>
+            <div id="pollResults" class="poll-results"></div>
+        </div>
+
+        <!-- Fan Comments -->
+        <div class="content-box">
+            <h3>Fan Comments</h3>
+            <form onsubmit="submitComment(event)">
+                <div class="form-group">
+                    <input type="text" id="commentName" placeholder="Your Name" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="commentText" placeholder="Share your thoughts..." rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Post Comment</button>
+            </form>
+            <div id="commentsList" style="margin-top: 2rem;"></div>
+        </div>
+
+        <!-- Join Fan Club -->
+        <div class="content-box">
+            <h3>Join Our Fan Club</h3>
+            <form onsubmit="submitMembership(event)">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="memberName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="memberEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="memberPhone" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Players Data
+        let players = [
+            { id: 1, name: 'James Mwangi', number: 10, position: 'forward', age: 24, goals: 18, assists: 5, appearances: 22, cards: 2 },
+            { id: 2, name: 'David Kamau', number: 1, position: 'goalkeeper', age: 28, goals: 0, assists: 0, appearances: 22, cards: 1 },
+            { id: 3, name: 'Peter Ochieng', number: 5, position: 'defender', age: 26, goals: 2, assists: 1, appearances: 20, cards: 5 },
+            { id: 4, name: 'Michael Kiprop', number: 7, position: 'midfielder', age: 23, goals: 8, assists: 12, appearances: 21, cards: 3 },
+            { id: 5, name: 'John Mutua', number: 9, position: 'forward', age: 25, goals: 15, assists: 4, appearances: 22, cards: 1 },
+            { id: 6, name: 'Samuel Wanjiru', number: 3, position: 'defender', age: 27, goals: 1, assists: 2, appearances: 19, cards: 4 },
+            { id: 7, name: 'Patrick Otieno', number: 6, position: 'midfielder', age: 24, goals: 5, assists: 8, appearances: 21, cards: 2 },
+            { id: 8, name: 'Joseph Korir', number: 11, position: 'forward', age: 22, goals: 10, assists: 6, appearances: 20, cards: 1 },
+            { id: 9, name: 'Daniel Kariuki', number: 2, position: 'defender', age: 29, goals: 0, assists: 3, appearances: 22, cards: 6 },
+            { id: 10, name: 'Francis Kimani', number: 4, position: 'defender', age: 25, goals: 1, assists: 1, appearances: 18, cards: 3 },
+            { id: 11, name: 'Andrew Macharia', number: 8, position: 'midfielder', age: 26, goals: 6, assists: 10, appearances: 22, cards: 2 },
+            { id: 12, name: 'Simon Njoroge', number: 16, position: 'goalkeeper', age: 23, goals: 0, assists: 0, appearances: 5, cards: 0 },
+            { id: 13, name: 'George Maina', number: 14, position: 'midfielder', age: 21, goals: 3, assists: 4, appearances: 15, cards: 1 },
+            { id: 14, name: 'Kevin Gitau', number: 18, position: 'forward', age: 20, goals: 4, assists: 2, appearances: 12, cards: 0 },
+            { id: 15, name: 'Brian Omondi', number: 15, position: 'defender', age: 24, goals: 0, assists: 1, appearances: 16, cards: 2 }
+        ];
+
+        // Revenue tracking
+        let revenueData = {
+            merchandise: 2500,
+            membership: 0,
+            membershipFee: 50
+        };
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedPlayers = localStorage.getItem('players');
+            const savedRevenue = localStorage.getItem('revenueData');
+
+            if (savedPlayers) players = JSON.parse(savedPlayers);
+            if (savedRevenue) revenueData = JSON.parse(savedRevenue);
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('revenueData', JSON.stringify(revenueData));
+        }
+
+        // Toggle Mobile Menu
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Load Poll Players
+        function loadPollPlayers() {
+            const select = document.getElementById('pollPlayer');
+            select.innerHTML = '<option value="">Select player...</option>' + players.map(p => `
+                <option value="${p.id}">${p.name} (#${p.number})</option>
+            `).join('');
+        }
+
+        function submitPoll(e) {
+            e.preventDefault();
+            const playerId = document.getElementById('pollPlayer').value;
+            const player = players.find(p => p.id == playerId);
+            
+            let votes = JSON.parse(localStorage.getItem('poll') || '{}');
+            votes[playerId] = (votes[playerId] || 0) + 1;
+            localStorage.setItem('poll', JSON.stringify(votes));
+
+            showNotification(`Vote cast for ${player.name}!`);
+            displayPollResults();
+            document.getElementById('pollPlayer').value = '';
+        }
+
+        function displayPollResults() {
+            const votes = JSON.parse(localStorage.getItem('poll') || '{}');
+            const container = document.getElementById('pollResults');
+            
+            if (Object.keys(votes).length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const results = Object.entries(votes).map(([id, count]) => {
+                const player = players.find(p => p.id == id);
+                return { name: player.name, votes: count };
+            }).sort((a, b) => b.votes - a.votes);
+
+            container.innerHTML = '<h4 style="margin: 1rem 0;">Current Results:</h4>' + 
+                results.map(r => `<p>${r.name}: ${r.votes} vote${r.votes !== 1 ? 's' : ''}</p>`).join('');
+        }
+
+        function submitComment(e) {
+            e.preventDefault();
+            
+            const comment = {
+                id: Date.now(),
+                name: document.getElementById('commentName').value,
+                text: document.getElementById('commentText').value,
+                date: new Date().toISOString()
+            };
+
+            let comments = JSON.parse(localStorage.getItem('comments') || '[]');
+            comments.unshift(comment);
+            localStorage.setItem('comments', JSON.stringify(comments));
+
+            showNotification('Comment posted!');
+            e.target.reset();
+            loadComments();
+        }
+
+        function loadComments() {
+            const comments = JSON.parse(localStorage.getItem('comments') || '[]');
+            const container = document.getElementById('commentsList');
+
+            container.innerHTML = comments.map(c => `
+                <div class="comment-item">
+                    <p class="name">${c.name}</p>
+                    <p class="text">${c.text}</p>
+                    <p class="date">${new Date(c.date).toLocaleString()}</p>
+                </div>
+            `).join('') || '<p>No comments yet. Be the first!</p>';
+        }
+
+        function submitMembership(e) {
+            e.preventDefault();
+            
+            // Record membership revenue
+            revenueData.membership += revenueData.membershipFee;
+            saveData();
+            
+            showNotification('Membership registration successful! Welcome to The Wolves family!');
+            e.target.reset();
+        }
+
+        // Notifications
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedData();
+            loadPollPlayers();
+            displayPollResults();
+            loadComments();
+        });
+    </script>
+</body>
+</html>

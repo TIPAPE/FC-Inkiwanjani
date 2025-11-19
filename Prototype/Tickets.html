@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Book Tickets</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--black);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--black);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Montserrat', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-primary:hover {
+            background: var(--dark-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Match Cards */
+        .match-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--gold);
+            color: var(--black);
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Book Match Tickets</h2>
+        
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-content">
+                    <h3 class="card-title">Available Matches</h3>
+                    <select id="ticketMatch" class="form-group" style="width: 100%; padding: 0.8rem; margin-top: 1rem; border: 2px solid #ddd; border-radius: 5px;">
+                        <option value="">Select a match...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="bookingForm" style="display: none; margin-top: 2rem; background: white; padding: 2rem; border-radius: 10px;">
+            <h3 style="margin-bottom: 1.5rem;">Booking Details</h3>
+            <form onsubmit="submitBooking(event)">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="customerName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="customerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="customerPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Ticket Type *</label>
+                    <select id="ticketType" required>
+                        <option value="">Select ticket type...</option>
+                        <option value="vip">VIP - $20</option>
+                        <option value="regular">Regular - $10</option>
+                        <option value="student">Student - $5</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Number of Tickets *</label>
+                    <input type="number" id="ticketQuantity" min="1" max="10" required>
+                </div>
+                <div class="form-group">
+                    <p><strong>Total: $<span id="totalPrice">0</span></strong></p>
+                </div>
+                <button type="submit" class="btn btn-primary">Confirm Booking</button>
+            </form>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <h3 class="section-title">My Bookings</h3>
+            <div id="myBookings"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Matches Data
+        let matches = [
+            { id: 1, opponent: 'Rift Valley FC', date: '2025-10-15T15:00', venue: 'home', competition: 'league', status: 'upcoming', score: null },
+            { id: 2, opponent: 'Molo Warriors', date: '2025-10-22T16:00', venue: 'away', competition: 'league', status: 'upcoming', score: null },
+            { id: 3, opponent: 'Naivasha United', date: '2025-10-29T15:00', venue: 'home', competition: 'cup', status: 'upcoming', score: null },
+            { id: 4, opponent: 'Eldoret Stars', date: '2025-11-05T14:00', venue: 'away', competition: 'league', status: 'upcoming', score: null },
+            { id: 5, opponent: 'Kericho FC', date: '2025-11-12T15:00', venue: 'home', competition: 'league', status: 'upcoming', score: null }
+        ];
+
+        // Ticket prices
+        let ticketPrices = { vip: 20, regular: 10, student: 5 };
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedMatches = localStorage.getItem('matches');
+            const savedPrices = localStorage.getItem('ticketPrices');
+
+            if (savedMatches) matches = JSON.parse(savedMatches);
+            if (savedPrices) ticketPrices = JSON.parse(savedPrices);
+        }
+
+        // Toggle Mobile Menu
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Load Ticket Matches
+        function loadTicketMatches() {
+            const select = document.getElementById('ticketMatch');
+            const upcoming = matches.filter(m => m.status === 'upcoming');
+            
+            select.innerHTML = '<option value="">Select a match...</option>' + upcoming.map(m => `
+                <option value="${m.id}">${new Date(m.date).toLocaleDateString()} - FC Inkiwanjani vs ${m.opponent}</option>
+            `).join('');
+
+            select.addEventListener('change', function() {
+                document.getElementById('bookingForm').style.display = this.value ? 'block' : 'none';
+            });
+
+            document.getElementById('ticketType').addEventListener('change', calculateTotal);
+            document.getElementById('ticketQuantity').addEventListener('input', calculateTotal);
+        }
+
+        function calculateTotal() {
+            const type = document.getElementById('ticketType').value;
+            const quantity = parseInt(document.getElementById('ticketQuantity').value) || 0;
+            const total = ticketPrices[type] * quantity || 0;
+            document.getElementById('totalPrice').textContent = total;
+        }
+
+        function submitBooking(e) {
+            e.preventDefault();
+            
+            const booking = {
+                id: Date.now(),
+                match: document.getElementById('ticketMatch').selectedOptions[0].text,
+                name: document.getElementById('customerName').value,
+                email: document.getElementById('customerEmail').value,
+                phone: document.getElementById('customerPhone').value,
+                type: document.getElementById('ticketType').value,
+                quantity: document.getElementById('ticketQuantity').value,
+                total: document.getElementById('totalPrice').textContent,
+                date: new Date().toISOString()
+            };
+
+            let bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            bookings.push(booking);
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+
+            showNotification('Booking confirmed! Ticket ID: #' + booking.id);
+            e.target.reset();
+            document.getElementById('bookingForm').style.display = 'none';
+            document.getElementById('totalPrice').textContent = '0';
+            loadBookings();
+        }
+
+        function loadBookings() {
+            const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const container = document.getElementById('myBookings');
+
+            const html = bookings.length ? bookings.map(b => `
+                <div class="match-card">
+                    <h4>Ticket #${b.id}</h4>
+                    <p><strong>${b.match}</strong></p>
+                    <p>${b.name} • ${b.email}</p>
+                    <p>${b.quantity}x ${b.type.toUpperCase()} tickets - $${b.total}</p>
+                    <p style="color: #666; font-size: 0.85rem;">Booked: ${new Date(b.date).toLocaleString()}</p>
+                </div>
+            `).join('') : '<p>No bookings yet.</p>';
+
+            container.innerHTML = html;
+        }
+
+        // Notifications
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedData();
+            loadTicketMatches();
+            loadBookings();
+
+            // Check for match parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const matchId = urlParams.get('match');
+            if (matchId) {
+                document.getElementById('ticketMatch').value = matchId;
+                document.getElementById('bookingForm').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

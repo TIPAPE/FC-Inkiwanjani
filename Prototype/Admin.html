@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Admin Tabs */
+        .admin-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-tab {
+            padding: 0.8rem 1.5rem;
+            background: var(--black);
+            color: var(--gold);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .admin-tab.active {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .admin-tab:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        /* Admin Panel */
+        .admin-panel {
+            background: var(--dark-gray);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .admin-panel h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .admin-panel h4 {
+            color: var(--gold);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .admin-content.active {
+            display: block;
+        }
+
+        /* Revenue Grid */
+        .revenue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .revenue-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .revenue-card h4 {
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .revenue-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        .revenue-change {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .revenue-change.positive {
+            color: #28a745;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Montserrat', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-primary:hover {
+            background: var(--dark-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--gold);
+            border: 2px solid var(--gold);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Table */
+        .table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .table thead {
+            background: var(--black);
+            color: var(--gold);
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #eee;
+        }
+
+        .table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        /* Match Cards */
+        .match-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .match-card h4 {
+            color: var(--black);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--gold);
+            color: var(--black);
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .admin-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Admin Dashboard</h2>
+
+        <!-- Admin Tabs -->
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="showAdminTab('revenue')">Revenue Analytics</button>
+            <button class="admin-tab" onclick="showAdminTab('players-manage')">Manage Players</button>
+            <button class="admin-tab" onclick="showAdminTab('stats-update')">Update Stats</button>
+            <button class="admin-tab" onclick="showAdminTab('match-results')">Match Results</button>
+            <button class="admin-tab" onclick="showAdminTab('add-match')">Add Match</button>
+            <button class="admin-tab" onclick="showAdminTab('add-news')">Add News</button>
+            <button class="admin-tab" onclick="showAdminTab('bookings')">View Bookings</button>
+            <button class="admin-tab" onclick="showAdminTab('settings')">Settings</button>
+        </div>
+
+        <!-- Revenue Analytics Tab -->
+        <div id="revenue" class="admin-content active">
+            <div class="admin-panel">
+                <h3>📊 Revenue Dashboard</h3>
+                
+                <div class="revenue-grid">
+                    <div class="revenue-card">
+                        <h4>Total Revenue (This Month)</h4>
+                        <div class="revenue-amount" id="totalRevenue">$0</div>
+                        <div class="revenue-change positive" id="revenueChange">+0% from last month</div>
+                    </div>
+
+                    <div class="revenue-card">
+                        <h4>Ticket Sales</h4>
+                        <div class="revenue-amount" id="ticketRevenue">$0</div>
+                        <div class="revenue-change" id="ticketChange">0 tickets sold</div>
+                    </div>
+
+                    <div class="revenue-card">
+                        <h4>Merchandise Sales</h4>
+                        <div class="revenue-amount" id="merchandiseRevenue">$0</div>
+                        <div class="revenue-change positive">+15% from last month</div>
+                    </div>
+
+                    <div class="revenue-card">
+                        <h4>Sponsorships</h4>
+                        <div class="revenue-amount">$5,000</div>
+                        <div class="revenue-change">Active: 3 sponsors</div>
+                    </div>
+
+                    <div class="revenue-card">
+                        <h4>Membership Fees</h4>
+                        <div class="revenue-amount" id="membershipRevenue">$0</div>
+                        <div class="revenue-change" id="memberCount">0 active members</div>
+                    </div>
+
+                    <div class="revenue-card">
+                        <h4>Other Income</h4>
+                        <div class="revenue-amount">$750</div>
+                        <div class="revenue-change">Training camps, etc.</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 2rem;">Revenue Breakdown by Source</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Revenue Source</th>
+                            <th>Amount</th>
+                            <th>Percentage</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revenueBreakdown"></tbody>
+                </table>
+
+                <h3 style="margin-top: 2rem;">Monthly Ticket Sales Report</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Match</th>
+                            <th>VIP Tickets</th>
+                            <th>Regular Tickets</th>
+                            <th>Student Tickets</th>
+                            <th>Total Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketSalesReport"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Manage Players Tab -->
+        <div id="players-manage" class="admin-content">
+            <div class="admin-panel">
+                <h3>👥 Add New Player</h3>
+                <form onsubmit="addPlayer(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Player Name *</label>
+                            <input type="text" id="newPlayerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Jersey Number *</label>
+                            <input type="number" id="newPlayerNumber" min="1" max="99" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Position *</label>
+                            <select id="newPlayerPosition" required>
+                                <option value="">Select position...</option>
+                                <option value="goalkeeper">Goalkeeper</option>
+                                <option value="defender">Defender</option>
+                                <option value="midfielder">Midfielder</option>
+                                <option value="forward">Forward</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Age *</label>
+                            <input type="number" id="newPlayerAge" min="16" max="45" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Player to Squad</button>
+                </form>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Current Squad</h3>
+                <div id="adminPlayersList"></div>
+            </div>
+        </div>
+
+        <!-- Update Stats Tab -->
+        <div id="stats-update" class="admin-content">
+            <div class="admin-panel">
+                <h3>⚽ Update Player Statistics</h3>
+                <form onsubmit="updatePlayerStats(event)">
+                    <div class="form-group">
+                        <label>Select Player *</label>
+                        <select id="statsPlayerId" required>
+                            <option value="">Choose a player...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Goals</label>
+                            <input type="number" id="statsGoals" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Assists</label>
+                            <input type="number" id="statsAssists" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Appearances</label>
+                            <input type="number" id="statsAppearances" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Yellow Cards</label>
+                            <input type="number" id="statsCards" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary">Update Statistics</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadPlayerStatsForEdit()">Load Current Stats</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Top Performers</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Position</th>
+                            <th>Goals</th>
+                            <th>Assists</th>
+                            <th>Appearances</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topPerformers"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Match Results Tab -->
+        <div id="match-results" class="admin-content">
+            <div class="admin-panel">
+                <h3>📝 Update Match Results</h3>
+                <form onsubmit="updateMatchResult(event)">
+                    <div class="form-group">
+                        <label>Select Match *</label>
+                        <select id="resultMatchId" required>
+                            <option value="">Choose a match...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>FC Inkiwanjani Score *</label>
+                            <input type="number" id="resultHomeScore" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Opponent Score *</label>
+                            <input type="number" id="resultAwayScore" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Match Summary</label>
+                        <textarea id="resultSummary" rows="4" placeholder="Brief match summary..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Update Result</button>
+                </form>
+            </div>
+
+            <div class="admin-panel">
+                <h3>Recent Results</h3>
+                <div id="recentResults"></div>
+            </div>
+        </div>
+
+        <!-- Add Match Tab -->
+        <div id="add-match" class="admin-content">
+            <div class="admin-panel">
+                <h3>➕ Add New Match</h3>
+                <form onsubmit="addMatch(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Opponent Team *</label>
+                            <input type="text" id="adminOpponent" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date & Time *</label>
+                            <input type="datetime-local" id="adminDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Venue *</label>
+                            <select id="adminVenue" required>
+                                <option value="home">Home</option>
+                                <option value="away">Away</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Competition *</label>
+                            <select id="adminCompetition" required>
+                                <option value="league">League</option>
+                                <option value="cup">Cup</option>
+                                <option value="friendly">Friendly</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Match</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add News Tab -->
+        <div id="add-news" class="admin-content">
+            <div class="admin-panel">
+                <h3>📰 Publish News Article</h3>
+                <form onsubmit="addNews(event)">
+                    <div class="form-group">
+                        <label>Article Title *</label>
+                        <input type="text" id="adminNewsTitle" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="adminNewsCategory" required>
+                            <option value="match-report">Match Report</option>
+                            <option value="transfer">Transfer News</option>
+                            <option value="announcement">Club Announcement</option>
+                            <option value="community">Community</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Article Content *</label>
+                        <textarea id="adminNewsContent" rows="8" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Publish Article</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- View Bookings Tab -->
+        <div id="bookings" class="admin-content">
+            <div class="admin-panel">
+                <h3>🎫 All Ticket Bookings</h3>
+                <div id="adminBookings"></div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="admin-content">
+            <div class="admin-panel">
+                <h3>⚙️ Club Settings</h3>
+                
+                <h4 style="color: var(--gold); margin-top: 2rem;">Ticket Prices</h4>
+                <form onsubmit="updateTicketPrices(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>VIP Ticket Price ($)</label>
+                            <input type="number" id="vipPrice" value="20" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Regular Ticket Price ($)</label>
+                            <input type="number" id="regularPrice" value="10" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Student Ticket Price ($)</label>
+                            <input type="number" id="studentPrice" value="5" min="1">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Prices</button>
+                </form>
+
+                <h4 style="color: var(--gold); margin-top: 2rem;">Merchandise Sales</h4>
+                <form onsubmit="updateMerchandiseSales(event)">
+                    <div class="form-group">
+                        <label>Add Monthly Merchandise Revenue ($)</label>
+                        <input type="number" id="merchandiseAmount" placeholder="Enter amount sold this month">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Record Merchandise Sales</button>
+                </form>
+
+                <h4 style="color: var(--gold); margin-top: 2rem;">Membership Fees</h4>
+                <form onsubmit="recordMembershipFee(event)">
+                    <div class="form-group">
+                        <label>Membership Fee per Member ($)</label>
+                        <input type="number" id="membershipFee" value="50" min="1">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Membership Fee</button>
+                </form>
+
+                <h4 style="color: var(--gold); margin-top: 2rem;">Data Management</h4>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="exportData()">Export All Data</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // ========== DATA ==========
+        let players = [
+            { id: 1, name: 'James Mwangi', number: 10, position: 'forward', age: 24, goals: 18, assists: 5, appearances: 22, cards: 2 },
+            { id: 2, name: 'David Kamau', number: 1, position: 'goalkeeper', age: 28, goals: 0, assists: 0, appearances: 22, cards: 1 },
+            { id: 3, name: 'Peter Ochieng', number: 5, position: 'defender', age: 26, goals: 2, assists: 1, appearances: 20, cards: 5 },
+            { id: 4, name: 'Michael Kiprop', number: 7, position: 'midfielder', age: 23, goals: 8, assists: 12, appearances: 21, cards: 3 },
+            { id: 5, name: 'John Mutua', number: 9, position: 'forward', age: 25, goals: 15, assists: 4, appearances: 22, cards: 1 },
+            { id: 6, name: 'Samuel Wanjiru', number: 3, position: 'defender', age: 27, goals: 1, assists: 2, appearances: 19, cards: 4 },
+            { id: 7, name: 'Patrick Otieno', number: 6, position: 'midfielder', age: 24, goals: 5, assists: 8, appearances: 21, cards: 2 },
+            { id: 8, name: 'Joseph Korir', number: 11, position: 'forward', age: 22, goals: 10, assists: 6, appearances: 20, cards: 1 },
+            { id: 9, name: 'Daniel Kariuki', number: 2, position: 'defender', age: 29, goals: 0, assists: 3, appearances: 22, cards: 6 },
+            { id: 10, name: 'Francis Kimani', number: 4, position: 'defender', age: 25, goals: 1, assists: 1, appearances: 18, cards: 3 },
+            { id: 11, name: 'Andrew Macharia', number: 8, position: 'midfielder', age: 26, goals: 6, assists: 10, appearances: 22, cards: 2 },
+            { id: 12, name: 'Simon Njoroge', number: 16, position: 'goalkeeper', age: 23, goals: 0, assists: 0, appearances: 5, cards: 0 },
+            { id: 13, name: 'George Maina', number: 14, position: 'midfielder', age: 21, goals: 3, assists: 4, appearances: 15, cards: 1 },
+            { id: 14, name: 'Kevin Gitau', number: 18, position: 'forward', age: 20, goals: 4, assists: 2, appearances: 12, cards: 0 },
+            { id: 15, name: 'Brian Omondi', number: 15, position: 'defender', age: 24, goals: 0, assists: 1, appearances: 16, cards: 2 }
+        ];
+
+        let matches = [
+            { id: 1, opponent: 'Rift Valley FC', date: '2025-10-15T15:00', venue: 'home', competition: 'league', status: 'upcoming', score: null },
+            { id: 2, opponent: 'Molo Warriors', date: '2025-10-22T16:00', venue: 'away', competition: 'league', status: 'upcoming', score: null },
+            { id: 3, opponent: 'Naivasha United', date: '2025-10-29T15:00', venue: 'home', competition: 'cup', status: 'upcoming', score: null },
+            { id: 4, opponent: 'Eldoret Stars', date: '2025-11-05T14:00', venue: 'away', competition: 'league', status: 'upcoming', score: null },
+            { id: 5, opponent: 'Kericho FC', date: '2025-11-12T15:00', venue: 'home', competition: 'league', status: 'upcoming', score: null },
+            { id: 6, opponent: 'Nakuru United', date: '2025-10-08T15:00', venue: 'home', competition: 'league', status: 'completed', score: '3-1' },
+            { id: 7, opponent: 'Baringo Rangers', date: '2025-10-01T16:00', venue: 'away', competition: 'league', status: 'completed', score: '2-2' },
+            { id: 8, opponent: 'Kabarnet FC', date: '2025-09-24T15:00', venue: 'home', competition: 'league', status: 'completed', score: '4-0' },
+            { id: 9, opponent: 'Londiani FC', date: '2025-09-17T14:00', venue: 'away', competition: 'cup', status: 'completed', score: '1-0' },
+            { id: 10, opponent: 'Njoro United', date: '2025-09-10T15:00', venue: 'home', competition: 'league', status: 'completed', score: '3-2' }
+        ];
+
+        let newsArticles = [];
+        let ticketPrices = { vip: 20, regular: 10, student: 5 };
+        let revenueData = { merchandise: 2500, membership: 0, membershipFee: 50 };
+
+        // ========== LOAD/SAVE DATA ==========
+        function loadSavedData() {
+            const savedPlayers = localStorage.getItem('players');
+            const savedMatches = localStorage.getItem('matches');
+            const savedRevenue = localStorage.getItem('revenueData');
+            const savedPrices = localStorage.getItem('ticketPrices');
+
+            if (savedPlayers) players = JSON.parse(savedPlayers);
+            if (savedMatches) matches = JSON.parse(savedMatches);
+            if (savedRevenue) revenueData = JSON.parse(savedRevenue);
+            if (savedPrices) ticketPrices = JSON.parse(savedPrices);
+        }
+
+        function saveData() {
+            localStorage.setItem('players', JSON.stringify(players));
+            localStorage.setItem('matches', JSON.stringify(matches));
+            localStorage.setItem('revenueData', JSON.stringify(revenueData));
+            localStorage.setItem('ticketPrices', JSON.stringify(ticketPrices));
+        }
+
+        // ========== NAVIGATION ==========
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        function showAdminTab(tabId) {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // ========== REVENUE ANALYTICS ==========
+        function calculateRevenue() {
+            const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            
+            let ticketRevenue = 0;
+            bookings.forEach(b => {
+                ticketRevenue += parseFloat(b.total);
+            });
+            
+            document.getElementById('ticketRevenue').textContent = `${ticketRevenue.toFixed(0)}`;
+            document.getElementById('ticketChange').textContent = `${bookings.length} tickets sold`;
+            
+            document.getElementById('merchandiseRevenue').textContent = `${revenueData.merchandise}`;
+            document.getElementById('membershipRevenue').textContent = `${revenueData.membership}`;
+            
+            const memberCount = Math.floor(revenueData.membership / revenueData.membershipFee);
+            document.getElementById('memberCount').textContent = `${memberCount} active members`;
+            
+            const totalRevenue = ticketRevenue + revenueData.merchandise + revenueData.membership + 5000 + 750;
+            document.getElementById('totalRevenue').textContent = `${totalRevenue.toFixed(0)}`;
+            document.getElementById('revenueChange').textContent = '+12% from last month';
+        }
+
+        function displayRevenueBreakdown() {
+            const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            let ticketRevenue = 0;
+            bookings.forEach(b => ticketRevenue += parseFloat(b.total));
+            
+            const total = ticketRevenue + revenueData.merchandise + revenueData.membership + 5000 + 750;
+            
+            const breakdown = [
+                { source: 'Sponsorships', amount: 5000, percentage: ((5000/total)*100).toFixed(1), trend: '↑' },
+                { source: 'Ticket Sales', amount: ticketRevenue, percentage: ((ticketRevenue/total)*100).toFixed(1), trend: '↑' },
+                { source: 'Merchandise', amount: revenueData.merchandise, percentage: ((revenueData.merchandise/total)*100).toFixed(1), trend: '↑' },
+                { source: 'Memberships', amount: revenueData.membership, percentage: ((revenueData.membership/total)*100).toFixed(1), trend: '↑' },
+                { source: 'Other Income', amount: 750, percentage: ((750/total)*100).toFixed(1), trend: '→' }
+            ];
+            
+            const container = document.getElementById('revenueBreakdown');
+            container.innerHTML = breakdown.map(b => `
+                <tr>
+                    <td>${b.source}</td>
+                    <td>${b.amount}</td>
+                    <td>${b.percentage}%</td>
+                    <td>${b.trend}</td>
+                </tr>
+            `).join('');
+        }
+
+        function displayTicketSalesReport() {
+            const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const matchSales = {};
+            
+            bookings.forEach(b => {
+                if (!matchSales[b.match]) {
+                    matchSales[b.match] = { vip: 0, regular: 0, student: 0, total: 0 };
+                }
+                matchSales[b.match][b.type] += parseInt(b.quantity);
+                matchSales[b.match].total += parseFloat(b.total);
+            });
+            
+            const container = document.getElementById('ticketSalesReport');
+            container.innerHTML = Object.entries(matchSales).map(([match, sales]) => `
+                <tr>
+                    <td>${match}</td>
+                    <td>${sales.vip || 0}</td>
+                    <td>${sales.regular || 0}</td>
+                    <td>${sales.student || 0}</td>
+                    <td>${sales.total.toFixed(0)}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align: center;">No ticket sales yet</td></tr>';
+        }
+
+        // ========== MANAGE PLAYERS ==========
+        function addPlayer(e) {
+            e.preventDefault();
+            
+            const newPlayer = {
+                id: players.length + 1,
+                name: document.getElementById('newPlayerName').value,
+                number: parseInt(document.getElementById('newPlayerNumber').value),
+                position: document.getElementById('newPlayerPosition').value,
+                age: parseInt(document.getElementById('newPlayerAge').value),
+                goals: 0,
+                assists: 0,
+                appearances: 0,
+                cards: 0
+            };
+
+            players.push(newPlayer);
+            saveData();
+            
+            showNotification(`${newPlayer.name} added to squad!`);
+            e.target.reset();
+            loadAdminPlayersList();
+            loadStatsPlayerSelect();
+        }
+
+        function loadAdminPlayersList() {
+            const container = document.getElementById('adminPlayersList');
+            
+            container.innerHTML = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Age</th>
+                            <th>Goals</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${players.map(p => `
+                            <tr>
+                                <td>${p.number}</td>
+                                <td>${p.name}</td>
+                                <td>${p.position}</td>
+                                <td>${p.age}</td>
+                                <td>${p.goals}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-small" onclick="removePlayer(${p.id})">Remove</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function removePlayer(playerId) {
+            if (!confirm('Are you sure you want to remove this player from the squad?')) return;
+            
+            players = players.filter(p => p.id !== playerId);
+            saveData();
+            
+            showNotification('Player removed from squad');
+            loadAdminPlayersList();
+            loadStatsPlayerSelect();
+        }
+
+        // ========== UPDATE STATS ==========
+        function loadStatsPlayerSelect() {
+            const select = document.getElementById('statsPlayerId');
+            select.innerHTML = '<option value="">Choose a player...</option>' + players.map(p => `
+                <option value="${p.id}">${p.name} (#${p.number}) - ${p.position}</option>
+            `).join('');
+        }
+
+        function loadPlayerStatsForEdit() {
+            const playerId = parseInt(document.getElementById('statsPlayerId').value);
+            if (!playerId) {
+                showNotification('Please select a player first');
+                return;
+            }
+            
+            const player = players.find(p => p.id === playerId);
+            document.getElementById('statsGoals').value = player.goals;
+            document.getElementById('statsAssists').value = player.assists;
+            document.getElementById('statsAppearances').value = player.appearances;
+            document.getElementById('statsCards').value = player.cards;
+        }
+
+        function updatePlayerStats(e) {
+            e.preventDefault();
+            
+            const playerId = parseInt(document.getElementById('statsPlayerId').value);
+            const player = players.find(p => p.id === playerId);
+            
+            player.goals = parseInt(document.getElementById('statsGoals').value);
+            player.assists = parseInt(document.getElementById('statsAssists').value);
+            player.appearances = parseInt(document.getElementById('statsAppearances').value);
+            player.cards = parseInt(document.getElementById('statsCards').value);
+            
+            saveData();
+            showNotification(`Stats updated for ${player.name}`);
+            loadTopPerformers();
+        }
+
+        function loadTopPerformers() {
+            const sorted = [...players].sort((a, b) => b.goals - a.goals).slice(0, 5);
+            const container = document.getElementById('topPerformers');
+            
+            container.innerHTML = sorted.map(p => `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.position}</td>
+                    <td>${p.goals}</td>
+                    <td>${p.assists}</td>
+                    <td>${p.appearances}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ========== MATCH RESULTS ==========
+        function loadResultMatchSelect() {
+            const select = document.getElementById('resultMatchId');
+            const upcoming = matches.filter(m => m.status === 'upcoming' || m.status === 'completed');
+            
+            select.innerHTML = '<option value="">Choose a match...</option>' + upcoming.map(m => `
+                <option value="${m.id}">${new Date(m.date).toLocaleDateString()} - FC Inkiwanjani vs ${m.opponent}</option>
+            `).join('');
+        }
+
+        function updateMatchResult(e) {
+            e.preventDefault();
+            
+            const matchId = parseInt(document.getElementById('resultMatchId').value);
+            const match = matches.find(m => m.id === matchId);
+            
+            const homeScore = document.getElementById('resultHomeScore').value;
+            const awayScore = document.getElementById('resultAwayScore').value;
+            
+            match.status = 'completed';
+            match.score = `${homeScore}-${awayScore}`;
+            match.summary = document.getElementById('resultSummary').value;
+            
+            saveData();
+            showNotification('Match result updated successfully!');
+            e.target.reset();
+            loadRecentResults();
+        }
+
+        function loadRecentResults() {
+            const completed = matches.filter(m => m.status === 'completed').slice(0, 5);
+            const container = document.getElementById('recentResults');
+            
+            container.innerHTML = completed.map(m => `
+                <div class="match-card">
+                    <h4>FC Inkiwanjani ${m.score} ${m.opponent}</h4>
+                    <p>${new Date(m.date).toLocaleDateString()} - ${m.competition.toUpperCase()}</p>
+                    ${m.summary ? `<p style="margin-top: 0.5rem;">${m.summary}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // ========== ADD MATCH ==========
+        function addMatch(e) {
+            e.preventDefault();
+            
+            const newMatch = {
+                id: matches.length + 1,
+                opponent: document.getElementById('adminOpponent').value,
+                date: document.getElementById('adminDate').value,
+                venue: document.getElementById('adminVenue').value,
+                competition: document.getElementById('adminCompetition').value,
+                status: 'upcoming',
+                score: null
+            };
+
+            matches.push(newMatch);
+            saveData();
+            
+            showNotification('Match added successfully!');
+            e.target.reset();
+            loadResultMatchSelect();
+        }
+
+        // ========== ADD NEWS ==========
+        function addNews(e) {
+            e.preventDefault();
+            
+            const newArticle = {
+                id: newsArticles.length + 1,
+                title: document.getElementById('adminNewsTitle').value,
+                category: document.getElementById('adminNewsCategory').value,
+                date: new Date().toISOString().split('T')[0],
+                excerpt: document.getElementById('adminNewsContent').value.substring(0, 150) + '...',
+                content: document.getElementById('adminNewsContent').value
+            };
+
+            newsArticles.unshift(newArticle);
+            showNotification('News article published!');
+            e.target.reset();
+        }
+
+        // ========== VIEW BOOKINGS ==========
+        function loadBookings() {
+            const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+            const adminContainer = document.getElementById('adminBookings');
+
+            const html = bookings.length ? bookings.map(b => `
+                <div class="match-card">
+                    <h4>Ticket #${b.id}</h4>
+                    <p><strong>${b.match}</strong></p>
+                    <p>${b.name} • ${b.email}</p>
+                    <p>${b.quantity}x ${b.type.toUpperCase()} tickets - ${b.total}</p>
+                    <p style="color: #666; font-size: 0.85rem;">Booked: ${new Date(b.date).toLocaleString()}</p>
+                </div>
+            `).join('') : '<p>No bookings yet.</p>';
+
+            if (adminContainer) adminContainer.innerHTML = html;
+        }
+
+        // ========== SETTINGS ==========
+        function updateTicketPrices(e) {
+            e.preventDefault();
+            
+            ticketPrices.vip = parseInt(document.getElementById('vipPrice').value);
+            ticketPrices.regular = parseInt(document.getElementById('regularPrice').value);
+            ticketPrices.student = parseInt(document.getElementById('studentPrice').value);
+            
+            saveData();
+            showNotification('Ticket prices updated!');
+        }
+
+        function updateMerchandiseSales(e) {
+            e.preventDefault();
+            
+            const amount = parseInt(document.getElementById('merchandiseAmount').value);
+            revenueData.merchandise += amount;
+            
+            saveData();
+            calculateRevenue();
+            displayRevenueBreakdown();
+            
+            showNotification(`Merchandise sales of ${amount} recorded!`);
+            e.target.reset();
+        }
+
+        function recordMembershipFee(e) {
+            e.preventDefault();
+            
+            revenueData.membershipFee = parseInt(document.getElementById('membershipFee').value);
+            
+            saveData();
+            showNotification('Membership fee updated!');
+        }
+
+        function exportData() {
+            const data = {
+                players: players,
+                matches: matches,
+                bookings: JSON.parse(localStorage.getItem('bookings') || '[]'),
+                comments: JSON.parse(localStorage.getItem('comments') || '[]'),
+                revenue: revenueData,
+                prices: ticketPrices
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `fc-inkiwanjani-data-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification('Data exported successfully!');
+        }
+
+        function clearAllData() {
+            if (!confirm('⚠️ WARNING: This will delete ALL data including players, matches, bookings, and revenue records. Are you absolutely sure?')) return;
+            if (!confirm('This action cannot be undone. Proceed with clearing all data?')) return;
+            
+            localStorage.clear();
+            location.reload();
+        }
+
+        // ========== NOTIFICATIONS ==========
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // ========== INITIALIZE ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedData();
+            loadAdminPlayersList();
+            loadStatsPlayerSelect();
+            loadResultMatchSelect();
+            calculateRevenue();
+            displayRevenueBreakdown();
+            displayTicketSalesReport();
+            loadTopPerformers();
+            loadRecentResults();
+            loadBookings();
+        });
+    </script>
+</body>
+</html>

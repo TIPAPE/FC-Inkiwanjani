@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Latest News</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--dark-gray), var(--black));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--black);
+        }
+
+        .card-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-text {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--gold);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Latest News</h2>
+        <div class="cards-grid" id="newsList"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // News Articles Data
+        let newsArticles = [
+            { id: 1, title: 'Wolves Maul Nakuru United 3-1', category: 'match-report', date: '2025-10-08', excerpt: 'FC Inkiwanjani secured a convincing victory over Nakuru United in front of home fans...', content: 'FC Inkiwanjani put on a dominant display at Mile 46 Stadium, defeating Nakuru United 3-1 in a thrilling encounter. James Mwangi opened the scoring in the 15th minute with a clinical finish, before John Mutua doubled the lead just before halftime. Despite Nakuru pulling one back, Patrick Otieno sealed the victory with a stunning long-range effort in the 78th minute. The Wolves continue their impressive form and sit comfortably in 2nd place.' },
+            { id: 2, title: 'New Signing: Michael Kiprop Joins The Pack', category: 'transfer', date: '2025-10-05', excerpt: 'The Wolves announce the signing of talented midfielder Michael Kiprop from Molo Warriors...', content: 'FC Inkiwanjani is delighted to announce the signing of midfielder Michael Kiprop from Molo Warriors on a three-year deal. The 23-year-old has been in exceptional form this season and will add creativity and vision to our midfield. Manager Peter Kamau said: "Michael is exactly the type of player we need. His technical ability and work rate will strengthen our squad significantly."' },
+            { id: 3, title: 'Youth Academy Launch Announced', category: 'announcement', date: '2025-10-03', excerpt: 'FC Inkiwanjani is proud to announce the launch of our youth academy program...', content: 'We are thrilled to announce the official launch of the FC Inkiwanjani Youth Academy. The academy will focus on developing young talent from Mile 46 and surrounding areas. Training sessions will commence in November 2025 at Mile 46 Stadium. For registration details, contact our office.' },
+            { id: 4, title: 'Community Outreach: Wolves Give Back', category: 'community', date: '2025-10-01', excerpt: 'Players visited local schools in Mile 46 to inspire young footballers...', content: 'FC Inkiwanjani players spent the day at local primary schools in Mile 46, conducting coaching sessions and inspiring the next generation of footballers. The initiative, part of our community outreach program, saw James Mwangi, Peter Ochieng, and other players share their experiences and encourage children to pursue their dreams both on and off the field.' },
+            { id: 5, title: 'Match Preview: Rift Valley FC Clash', category: 'match-report', date: '2025-10-10', excerpt: 'Everything you need to know ahead of our crucial league match...', content: 'The Wolves face Rift Valley FC this weekend in what promises to be an exciting encounter. Both teams are vying for promotion positions, and a win for Inkiwanjani would strengthen our push for the top spot. Manager Peter Kamau has confirmed that all key players are fit and available for selection. Kickoff is at 3:00 PM at Mile 46 Stadium.' },
+            { id: 6, title: 'James Mwangi Nominated for Player of the Month', category: 'announcement', date: '2025-10-09', excerpt: 'Our star striker has been nominated for the regional player of the month award...', content: 'James Mwangi has been nominated for the Nakuru County Player of the Month award after his outstanding performances in September. The striker scored 6 goals in 4 matches, including a hat-trick against Londiani FC. The winner will be announced next week.' },
+            { id: 7, title: 'Stadium Renovation Plans Revealed', category: 'announcement', date: '2025-10-04', excerpt: 'Plans to upgrade Mile 46 Community Stadium have been approved by the club board...', content: 'FC Inkiwanjani has unveiled ambitious plans to renovate Mile 46 Community Stadium. The upgrades will include new changing rooms, improved seating, and enhanced facilities for fans. The project is expected to begin in the off-season and will increase capacity to 7,000.' },
+            { id: 8, title: 'Baringo Draw: Points Shared', category: 'match-report', date: '2025-10-01', excerpt: 'The Wolves fought hard but had to settle for a 2-2 draw against Baringo Rangers...', content: 'FC Inkiwanjani had to settle for a point away at Baringo Rangers in a thrilling 2-2 draw. The Wolves twice took the lead through goals from Michael Kiprop and Andrew Macharia, but Baringo equalized on both occasions. Despite the draw, manager Peter Kamau praised his team\'s fighting spirit and resilience.' }
+        ];
+
+        // Toggle Mobile Menu
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Load News
+        function loadNews() {
+            const container = document.getElementById('newsList');
+
+            const newsHTML = newsArticles.map(article => `
+                <div class="card" onclick="showNewsModal(${article.id})">
+                    <div class="card-image">📰</div>
+                    <div class="card-content">
+                        <div class="card-meta">${article.category.toUpperCase()} • ${new Date(article.date).toLocaleDateString()}</div>
+                        <h3 class="card-title">${article.title}</h3>
+                        <p class="card-text">${article.excerpt}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = newsHTML;
+        }
+
+        function showNewsModal(id) {
+            const article = newsArticles.find(a => a.id === id);
+            document.getElementById('modalBody').innerHTML = `
+                <h2 style="color: var(--gold); margin-bottom: 1rem;">${article.title}</h2>
+                <p style="color: #666; margin-bottom: 1rem;">${article.category.toUpperCase()} • ${new Date(article.date).toLocaleDateString()}</p>
+                <p style="line-height: 1.8;">${article.content}</p>
+            `;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Close modal on background click
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNews();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Our Squad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--gold);
+            background: white;
+            color: var(--black);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        /* Player Grid */
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .player-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .player-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .player-avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--gold), var(--dark-gold));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 1rem;
+        }
+
+        .player-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            color: var(--gold);
+        }
+
+        .player-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Our Squad</h2>
+        
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterPlayers('all')">All Players</button>
+            <button class="filter-btn" onclick="filterPlayers('goalkeeper')">Goalkeepers</button>
+            <button class="filter-btn" onclick="filterPlayers('defender')">Defenders</button>
+            <button class="filter-btn" onclick="filterPlayers('midfielder')">Midfielders</button>
+            <button class="filter-btn" onclick="filterPlayers('forward')">Forwards</button>
+        </div>
+
+        <div class="players-grid" id="playersList"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Players Data
+        let players = [
+            { id: 1, name: 'James Mwangi', number: 10, position: 'forward', age: 24, goals: 18, assists: 5, appearances: 22, cards: 2 },
+            { id: 2, name: 'David Kamau', number: 1, position: 'goalkeeper', age: 28, goals: 0, assists: 0, appearances: 22, cards: 1 },
+            { id: 3, name: 'Peter Ochieng', number: 5, position: 'defender', age: 26, goals: 2, assists: 1, appearances: 20, cards: 5 },
+            { id: 4, name: 'Michael Kiprop', number: 7, position: 'midfielder', age: 23, goals: 8, assists: 12, appearances: 21, cards: 3 },
+            { id: 5, name: 'John Mutua', number: 9, position: 'forward', age: 25, goals: 15, assists: 4, appearances: 22, cards: 1 },
+            { id: 6, name: 'Samuel Wanjiru', number: 3, position: 'defender', age: 27, goals: 1, assists: 2, appearances: 19, cards: 4 },
+            { id: 7, name: 'Patrick Otieno', number: 6, position: 'midfielder', age: 24, goals: 5, assists: 8, appearances: 21, cards: 2 },
+            { id: 8, name: 'Joseph Korir', number: 11, position: 'forward', age: 22, goals: 10, assists: 6, appearances: 20, cards: 1 },
+            { id: 9, name: 'Daniel Kariuki', number: 2, position: 'defender', age: 29, goals: 0, assists: 3, appearances: 22, cards: 6 },
+            { id: 10, name: 'Francis Kimani', number: 4, position: 'defender', age: 25, goals: 1, assists: 1, appearances: 18, cards: 3 },
+            { id: 11, name: 'Andrew Macharia', number: 8, position: 'midfielder', age: 26, goals: 6, assists: 10, appearances: 22, cards: 2 },
+            { id: 12, name: 'Simon Njoroge', number: 16, position: 'goalkeeper', age: 23, goals: 0, assists: 0, appearances: 5, cards: 0 },
+            { id: 13, name: 'George Maina', number: 14, position: 'midfielder', age: 21, goals: 3, assists: 4, appearances: 15, cards: 1 },
+            { id: 14, name: 'Kevin Gitau', number: 18, position: 'forward', age: 20, goals: 4, assists: 2, appearances: 12, cards: 0 },
+            { id: 15, name: 'Brian Omondi', number: 15, position: 'defender', age: 24, goals: 0, assists: 1, appearances: 16, cards: 2 }
+        ];
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedPlayers = localStorage.getItem('players');
+            if (savedPlayers) players = JSON.parse(savedPlayers);
+        }
+
+        // Toggle Mobile Menu
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Load Players
+        function loadPlayers(filter = 'all') {
+            const container = document.getElementById('playersList');
+            let filtered = players;
+
+            if (filter !== 'all') {
+                filtered = players.filter(p => p.position === filter);
+            }
+
+            container.innerHTML = filtered.map(player => `
+                <div class="player-card">
+                    <div class="player-avatar">⚽</div>
+                    <div class="player-number">#${player.number}</div>
+                    <h3>${player.name}</h3>
+                    <p style="color: var(--gold); text-transform: uppercase; font-size: 0.85rem; margin: 0.5rem 0;">${player.position}</p>
+                    <p style="color: #666; font-size: 0.9rem;">Age: ${player.age}</p>
+                    <div class="player-stats">
+                        <div><strong>${player.goals}</strong><br>Goals</div>
+                        <div><strong>${player.assists}</strong><br>Assists</div>
+                        <div><strong>${player.appearances}</strong><br>Apps</div>
+                        <div><strong>${player.cards}</strong><br>Cards</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterPlayers(filter) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            loadPlayers(filter);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedData();
+            loadPlayers();
+        });
+    </script>
+</body>
+</html>

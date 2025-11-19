@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 50%, var(--black) 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '🐺';
+            position: absolute;
+            font-size: 20rem;
+            opacity: 0.05;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+        }
+
+        .hero .slogan {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-primary:hover {
+            background: var(--dark-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--gold);
+            border: 2px solid var(--gold);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Quick Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--gold);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .countdown {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            color: var(--gold);
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, var(--dark-gray), var(--black));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--black);
+        }
+
+        .card-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-text {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--gold);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="hero-content">
+            <h1>THE WOLVES</h1>
+            <p class="slogan">The Pride of Mile 46</p>
+            <div class="cta-buttons">
+                <a href="tickets.html" class="btn btn-primary">Buy Tickets</a>
+                <a href="fixtures.html" class="btn btn-secondary">View Fixtures</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Next Match</h3>
+                <p><strong>FC Inkiwanjani vs Rift Valley FC</strong></p>
+                <p>October 15, 2025 - 3:00 PM</p>
+                <div class="countdown" id="nextMatchCountdown"></div>
+            </div>
+            <div class="stat-card">
+                <h3>Last Result</h3>
+                <p><strong>FC Inkiwanjani 3 - 1 Nakuru United</strong></p>
+                <p>October 8, 2025</p>
+            </div>
+            <div class="stat-card">
+                <h3>League Position</h3>
+                <p><strong>2nd Place</strong></p>
+                <p>45 Points - 22 Matches</p>
+            </div>
+            <div class="stat-card">
+                <h3>Top Scorer</h3>
+                <p><strong>James Mwangi</strong></p>
+                <p>18 Goals</p>
+            </div>
+        </div>
+
+        <h2 class="section-title">Latest News</h2>
+        <div class="cards-grid" id="homeNews"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sample News Data
+        let newsArticles = [
+            { id: 1, title: 'Wolves Maul Nakuru United 3-1', category: 'match-report', date: '2025-10-08', excerpt: 'FC Inkiwanjani secured a convincing victory over Nakuru United in front of home fans...', content: 'FC Inkiwanjani put on a dominant display at Mile 46 Stadium, defeating Nakuru United 3-1 in a thrilling encounter. James Mwangi opened the scoring in the 15th minute with a clinical finish, before John Mutua doubled the lead just before halftime. Despite Nakuru pulling one back, Patrick Otieno sealed the victory with a stunning long-range effort in the 78th minute. The Wolves continue their impressive form and sit comfortably in 2nd place.' },
+            { id: 2, title: 'New Signing: Michael Kiprop Joins The Pack', category: 'transfer', date: '2025-10-05', excerpt: 'The Wolves announce the signing of talented midfielder Michael Kiprop from Molo Warriors...', content: 'FC Inkiwanjani is delighted to announce the signing of midfielder Michael Kiprop from Molo Warriors on a three-year deal. The 23-year-old has been in exceptional form this season and will add creativity and vision to our midfield. Manager Peter Kamau said: "Michael is exactly the type of player we need. His technical ability and work rate will strengthen our squad significantly."' },
+            { id: 3, title: 'Youth Academy Launch Announced', category: 'announcement', date: '2025-10-03', excerpt: 'FC Inkiwanjani is proud to announce the launch of our youth academy program...', content: 'We are thrilled to announce the official launch of the FC Inkiwanjani Youth Academy. The academy will focus on developing young talent from Mile 46 and surrounding areas. Training sessions will commence in November 2025 at Mile 46 Stadium. For registration details, contact our office.' }
+        ];
+
+        // Toggle Mobile Menu
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Countdown Timer
+        function updateCountdown() {
+            const nextMatchDate = new Date('2025-10-15T15:00:00').getTime();
+            const now = new Date().getTime();
+            const distance = nextMatchDate - now;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const el = document.getElementById('nextMatchCountdown');
+            if (el) {
+                el.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }
+        }
+
+        // Load News
+        function loadNews() {
+            const homeContainer = document.getElementById('homeNews');
+
+            homeContainer.innerHTML = newsArticles.slice(0, 3).map(article => `
+                <div class="card" onclick="showNewsModal(${article.id})">
+                    <div class="card-image">📰</div>
+                    <div class="card-content">
+                        <div class="card-meta">${article.category.toUpperCase()} • ${new Date(article.date).toLocaleDateString()}</div>
+                        <h3 class="card-title">${article.title}</h3>
+                        <p class="card-text">${article.excerpt}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showNewsModal(id) {
+            const article = newsArticles.find(a => a.id === id);
+            document.getElementById('modalBody').innerHTML = `
+                <h2 style="color: var(--gold); margin-bottom: 1rem;">${article.title}</h2>
+                <p style="color: #666; margin-bottom: 1rem;">${article.category.toUpperCase()} • ${new Date(article.date).toLocaleDateString()}</p>
+                <p style="line-height: 1.8;">${article.content}</p>
+            `;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNews();
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        });
+    </script>
+</body>
+</html>

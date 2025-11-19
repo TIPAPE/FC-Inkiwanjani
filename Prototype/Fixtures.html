@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC Inkiwanjani - Fixtures & Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #FFD700;
+            --dark-gold: #FDB913;
+            --black: #000000;
+            --dark-gray: #1A1A1A;
+            --light-gray: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--light-gray);
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, var(--black) 0%, var(--dark-gray) 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .mobile-menu {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            color: var(--black);
+            margin-bottom: 2rem;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--gold);
+            background: white;
+            color: var(--black);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        /* Match Cards */
+        .match-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .match-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .match-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .vs {
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        .match-info {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: var(--black);
+        }
+
+        .btn-primary:hover {
+            background: var(--dark-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--dark-gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--dark-gray);
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                🐺 FC INKIWANJANI
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="fixtures.html">Fixtures</a></li>
+                <li><a href="tickets.html">Tickets</a></li>
+                <li><a href="squad.html">Squad</a></li>
+                <li><a href="gallery.html">Gallery</a></li>
+                <li><a href="news.html">News</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="fanzone.html">Fan Zone</a></li>
+                <li><a href="admin.html">Admin</a></li>
+            </ul>
+            <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Fixtures & Results</h2>
+        
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterMatches('all')">All Matches</button>
+            <button class="filter-btn" onclick="filterMatches('upcoming')">Upcoming</button>
+            <button class="filter-btn" onclick="filterMatches('completed')">Completed</button>
+            <button class="filter-btn" onclick="filterMatches('home')">Home</button>
+            <button class="filter-btn" onclick="filterMatches('away')">Away</button>
+        </div>
+
+        <div id="matchesList"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>FC Inkiwanjani</h3>
+                <p>The Pride of Mile 46</p>
+                <p style="margin-top: 1rem;">🐺 The Wolves</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <p><a href="fixtures.html" style="color: white; text-decoration: none;">Fixtures</a></p>
+                <p><a href="tickets.html" style="color: white; text-decoration: none;">Buy Tickets</a></p>
+                <p><a href="squad.html" style="color: white; text-decoration: none;">Squad</a></p>
+                <p><a href="about.html" style="color: white; text-decoration: none;">About Us</a></p>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>📍 Mile 46, Nakuru County</p>
+                <p>📧 info@fcinkiwanjani.com</p>
+                <p>📱 +254 700 000 000</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-links">
+                    <a href="#">📘</a>
+                    <a href="#">📷</a>
+                    <a href="#">🐦</a>
+                    <a href="#">▶️</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333;">
+            <p>&copy; 2025 FC Inkiwanjani. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Matches Data
+        let matches = [
+            { id: 1, opponent: 'Rift Valley FC', date: '2025-10-15T15:00', venue: 'home', competition: 'league', status: 'upcoming', score: null },
+            { id: 2, opponent: 'Molo Warriors', date: '2025-10-22T16:00', venue: 'away', competition: 'league', status: 'upcoming', score: null },
+            { id: 3, opponent: 'Naivasha United', date: '2025-10-29T15:00', venue: 'home', competition: 'cup', status: 'upcoming', score: null },
+            { id: 4, opponent: 'Eldoret Stars', date: '2025-11-05T14:00', venue: 'away', competition: 'league', status: 'upcoming', score: null },
+            { id: 5, opponent: 'Kericho FC', date: '2025-11-12T15:00', venue: 'home', competition: 'league', status: 'upcoming', score: null },
+            { id: 6, opponent: 'Nakuru United', date: '2025-10-08T15:00', venue: 'home', competition: 'league', status: 'completed', score: '3-1' },
+            { id: 7, opponent: 'Baringo Rangers', date: '2025-10-01T16:00', venue: 'away', competition: 'league', status: 'completed', score: '2-2' },
+            { id: 8, opponent: 'Kabarnet FC', date: '2025-09-24T15:00', venue: 'home', competition: 'league', status: 'completed', score: '4-0' },
+            { id: 9, opponent: 'Londiani FC', date: '2025-09-17T14:00', venue: 'away', competition: 'cup', status: 'completed', score: '1-0' },
+            { id: 10, opponent: 'Njoro United', date: '2025-09-10T15:00', venue: 'home', competition: 'league', status: 'completed', score: '3-2' }
+        ];
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const savedMatches = localStorage.getItem('matches');
+            if (savedMatches) matches = JSON.parse(savedMatches);
+        }
+
+        // Toggle Mobile Menu
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Load Matches
+        function loadMatches(filter = 'all') {
+            const container = document.getElementById('matchesList');
+            let filtered = matches;
+
+            if (filter === 'upcoming') filtered = matches.filter(m => m.status === 'upcoming');
+            if (filter === 'completed') filtered = matches.filter(m => m.status === 'completed');
+            if (filter === 'home') filtered = matches.filter(m => m.venue === 'home');
+            if (filter === 'away') filtered = matches.filter(m => m.venue === 'away');
+
+            container.innerHTML = filtered.map(match => `
+                <div class="match-card">
+                    <div class="match-header">
+                        <span style="background: ${match.status === 'upcoming' ? 'var(--gold)' : '#28a745'}; color: ${match.status === 'upcoming' ? 'black' : 'white'}; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                            ${match.status.toUpperCase()}
+                        </span>
+                        <span style="color: #666;">${match.competition.toUpperCase()}</span>
+                    </div>
+                    <div class="match-teams">
+                        <span>FC Inkiwanjani</span>
+                        <span class="vs">${match.score || 'VS'}</span>
+                        <span>${match.opponent}</span>
+                    </div>
+                    <div class="match-info">
+                        <span>📅 ${new Date(match.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span>🕐 ${new Date(match.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>📍 ${match.venue === 'home' ? 'Mile 46 Stadium' : 'Away'}</span>
+                    </div>
+                    ${match.status === 'upcoming' ? `<button class="btn btn-primary" style="margin-top: 1rem;" onclick="bookTicket(${match.id})">Buy Tickets</button>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function filterMatches(filter) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            loadMatches(filter);
+        }
+
+        function bookTicket(matchId) {
+            window.location.href = `tickets.html?match=${matchId}`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedData();
+            loadMatches();
+        });
+    </script>
+</body>
+</html>
