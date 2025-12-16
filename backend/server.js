@@ -4,74 +4,126 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
-// Middleware
+// ========================
+// MIDDLEWARE
+// ========================
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || '*', // '*' is safe for React Native
+    credentials: true,
+  })
+);
 app.use(compression());
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(morgan('combined')); // 'combined' for production logs
+app.use(express.json({ limit: '10mb' })); // Support file uploads
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// DB (uses your src/config/database.js)
+// Serve uploaded files statically (for images)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ========================
+// DATABASE CONNECTION
+// ========================
 const db = require('./src/config/database');
 
-// Routes
-app.use('/api/news', require('./src/routes/news'));
-app.use('/api/matches', require('./src/routes/matches'));
-app.use('/api/stats', require('./src/routes/stats'));
+// ========================
+// ROUTES - FULL API SURFACE
+// ========================
+app.use('/api/auth', require('./src/routes/authRoutes'));
+app.use('/api/players', require('./src/routes/playerRoutes'));
+app.use('/api/matches', require('./src/routes/matchRoutes'));
+app.use('/api/bookings', require('./src/routes/bookingRoutes'));
+app.use('/api/news', require('./src/routes/newsRoutes'));
+app.use('/api/revenue', require('./src/routes/revenueRoutes'));
+app.use('/api/gallery', require('./src/routes/galleryRoutes'));
+app.use('/api/comments', require('./src/routes/commentRoutes'));
+app.use('/api/polls', require('./src/routes/pollRoutes'));
+app.use('/api/memberships', require('./src/routes/membershipRoutes'));
+app.use('/api/settings', require('./src/routes/settingsRoutes'));
 
-// Health check
+// ========================
+// HEALTH & ROOT ENDPOINTS
+// ========================
 app.get('/health', (req, res) => {
-  res.json({
+  res.status(200).json({
     success: true,
-    message: 'FC Inkiwanjani API is running',
-    timestamp: new Date().toISOString()
+    message: 'FC Inkiwanjani API is operational',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
-// Root
 app.get('/', (req, res) => {
-  res.json({
+  res.status(200).json({
     success: true,
-    message: '🐺 Welcome to FC Inkiwanjani API',
-    team: 'The Wolves - Pride of Mile 46'
+    team: 'FC Inkiwanjani',
+    nickname: 'The Wolves',
+    motto: 'The Pride of Mile 46',
+    api_version: '1.0.0',
+    endpoints: '/api/{auth,players,matches,bookings,news,revenue,gallery,comments,polls,memberships,settings}',
   });
 });
 
-// 404
+// ========================
+// ERROR HANDLING
+// ========================
+// 404 handler
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: 'Route not found' });
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint not found',
+    message: `The route ${req.method} ${req.originalUrl} does not exist.`,
+  });
 });
 
-// Error middleware
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({ success: false, error: err.message || 'Internal Server Error' });
+  console.error('Unhandled Error:', err);
+
+  // Default to 500 if no status
+  const statusCode = err.status || err.statusCode || 500;
+
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
 });
 
-// Start server after DB check
+// ========================
+// START SERVER
+// ========================
 const PORT = process.env.PORT || 5000;
 
 (async () => {
   try {
-    // Try to get a connection from promisePool to ensure DB is reachable
-    const conn = await db.promisePool.getConnection();
-    conn.release();
-    console.log('✅ Database connection successful!');
+    // Verify DB connectivity
+    const connection = await db.promisePool.getConnection();
+    connection.release();
+    console.log('✅ Database connection verified.');
+
+    // Start server
     app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(50));
-      console.log('🐺 FC INKIWANJANI API');
-      console.log('='.repeat(50));
-      console.log(`🚀 Server: http://localhost:${PORT}`);
-      console.log(`🔗 Health: http://localhost:${PORT}/health`);
-      console.log('='.repeat(50) + '\n');
+      console.log('\n' + '='.repeat(60));
+      console.log('🐺 FC INKIWANJANI - OFFICIAL API SERVER');
+      console.log('='.repeat(60));
+      console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+      console.log(`📂 Uploads served at: http://localhost:${PORT}/uploads`);
+      console.log('='.repeat(60) + '\n');
     });
-  } catch (err) {
-    console.error('❌ Database connection failed:', err.message || err);
+  } catch (error) {
+    console.error('❌ FATAL: Failed to connect to database.');
+    console.error('Message:', error.message);
+    console.error('\n💡 Ensure MySQL is running and credentials are correct in .env');
     process.exit(1);
   }
 })();
