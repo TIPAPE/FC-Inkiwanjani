@@ -5,9 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "concurrently --names \"SERVER,EXPO\" --prefix-colors \"bgBlue.bold,bgMagenta.bold\" \"nodemon server.js\" \"npm run frontend\"",
     "server": "nodemon server.js",
     "frontend": "cd ../frontend && npx expo start",
-    "dev": "concurrently \"npm run server\" \"npm run frontend\"",
     "backend-only": "nodemon server.js"
   },
   "keywords": [
@@ -17,7 +17,7 @@
     "react-native",
     "nodejs"
   ],
-  "author": "Your Name",
+  "author": "FC Inkiwanjani Team",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.3",

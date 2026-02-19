@@ -1,129 +1,236 @@
-// server.js
+// backend/server.js
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const compression = require('compression');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// ========================
-// MIDDLEWARE
-// ========================
-app.use(helmet());
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || '*', // '*' is safe for React Native
-    credentials: true,
-  })
-);
-app.use(compression());
-app.use(morgan('combined')); // 'combined' for production logs
-app.use(express.json({ limit: '10mb' })); // Support file uploads
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Middleware
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*', // Allow all origins for development
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files statically (for images)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Request logging middleware (useful for debugging)
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
-// ========================
-// DATABASE CONNECTION
-// ========================
-const db = require('./src/config/database');
+// Test database connection
+require('./src/config/database');
 
-// ========================
-// ROUTES - FULL API SURFACE
-// ========================
-app.use('/api/auth', require('./src/routes/authRoutes'));
-app.use('/api/players', require('./src/routes/playerRoutes'));
-app.use('/api/matches', require('./src/routes/matchRoutes'));
-app.use('/api/bookings', require('./src/routes/bookingRoutes'));
-app.use('/api/news', require('./src/routes/newsRoutes'));
-app.use('/api/revenue', require('./src/routes/revenueRoutes'));
-app.use('/api/gallery', require('./src/routes/galleryRoutes'));
-app.use('/api/comments', require('./src/routes/commentRoutes'));
-app.use('/api/polls', require('./src/routes/pollRoutes'));
-app.use('/api/memberships', require('./src/routes/membershipRoutes'));
-app.use('/api/settings', require('./src/routes/settingsRoutes'));
+// Import Routes
+const authRoutes = require('./src/routes/authRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
+const publicRoutes = require('./src/routes/publicRoutes');
 
-// ========================
-// HEALTH & ROOT ENDPOINTS
-// ========================
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'FC Inkiwanjani API is operational',
+// API Routes
+// Public routes (no authentication required)
+app.use('/api', publicRoutes);
+
+// Auth routes (login, signup, token verification)
+app.use('/api/auth', authRoutes);
+
+// Admin routes (authentication + admin role required)
+app.use('/api/admin', adminRoutes);
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'FC Inkiwanjani API Server',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      admin: '/api/admin',
+      public: '/api',
+      health: '/api/health'
+    }
+  });
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'FC Inkiwanjani API is running',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    team: 'FC Inkiwanjani',
-    nickname: 'The Wolves',
-    motto: 'The Pride of Mile 46',
-    api_version: '1.0.0',
-    endpoints: '/api/{auth,players,matches,bookings,news,revenue,gallery,comments,polls,memberships,settings}',
+// API documentation endpoint
+app.get('/api/docs', (req, res) => {
+  res.json({
+    message: 'FC Inkiwanjani API Documentation',
+    version: '1.0.0',
+    routes: {
+      public: {
+        news: {
+          'GET /api/news': 'Get all news',
+          'GET /api/news/latest?limit=5': 'Get latest news',
+          'GET /api/news/:id': 'Get news by ID',
+          'GET /api/news/category/:category': 'Get news by category'
+        },
+        matches: {
+          'GET /api/matches': 'Get all matches',
+          'GET /api/matches/next': 'Get next match',
+          'GET /api/matches/last': 'Get last completed match',
+          'GET /api/matches/upcoming': 'Get upcoming matches',
+          'GET /api/matches/completed?limit=10': 'Get completed matches',
+          'GET /api/matches/:id': 'Get match by ID'
+        },
+        players: {
+          'GET /api/players': 'Get all players',
+          'GET /api/players/:id': 'Get player by ID',
+          'GET /api/players/top/scorers?limit=5': 'Get top scorers',
+          'GET /api/players/position/:position': 'Get players by position'
+        },
+        settings: {
+          'GET /api/settings/ticket-prices': 'Get ticket prices',
+          'GET /api/settings/club-info': 'Get club information'
+        }
+      },
+      auth: {
+        'POST /api/auth/login': 'Login user or admin',
+        'POST /api/auth/signup/user': 'Register new user',
+        'POST /api/auth/signup/admin': 'Register new admin',
+        'GET /api/auth/verify': 'Verify JWT token',
+        'GET /api/auth/profile': 'Get user profile',
+        'POST /api/auth/logout': 'Logout user'
+      },
+      admin: {
+        players: {
+          'GET /api/admin/players': 'Get all players',
+          'POST /api/admin/players': 'Add new player',
+          'PUT /api/admin/players/:id/stats': 'Update player stats',
+          'DELETE /api/admin/players/:id': 'Delete player',
+          'GET /api/admin/players/top-performers': 'Get top performers'
+        },
+        matches: {
+          'GET /api/admin/matches': 'Get all matches',
+          'GET /api/admin/matches/upcoming': 'Get upcoming matches',
+          'GET /api/admin/matches/completed': 'Get completed matches',
+          'POST /api/admin/matches': 'Add new match',
+          'PUT /api/admin/matches/:id/result': 'Update match result',
+          'DELETE /api/admin/matches/:id': 'Delete match'
+        },
+        news: {
+          'GET /api/admin/news': 'Get all news',
+          'POST /api/admin/news': 'Add news article',
+          'PUT /api/admin/news/:id': 'Update news article',
+          'DELETE /api/admin/news/:id': 'Delete news article'
+        },
+        bookings: {
+          'GET /api/admin/bookings': 'Get all bookings',
+          'GET /api/admin/bookings/stats': 'Get booking statistics',
+          'GET /api/admin/bookings/revenue-by-match': 'Get revenue by match'
+        },
+        revenue: {
+          'GET /api/admin/revenue/summary': 'Get revenue summary',
+          'GET /api/admin/revenue/monthly?year=2025&month=1': 'Get monthly revenue',
+          'POST /api/admin/revenue': 'Add revenue record'
+        },
+        settings: {
+          'GET /api/admin/settings': 'Get all settings',
+          'GET /api/admin/settings/ticket-prices': 'Get ticket prices',
+          'PUT /api/admin/settings/ticket-prices': 'Update ticket prices',
+          'PUT /api/admin/settings/membership-fee': 'Update membership fee'
+        },
+        dashboard: {
+          'GET /api/admin/dashboard/stats': 'Get dashboard statistics'
+        }
+      }
+    },
+    authentication: {
+      description: 'Admin routes require JWT token in Authorization header',
+      format: 'Bearer YOUR_JWT_TOKEN',
+      example: 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    }
   });
 });
 
-// ========================
-// ERROR HANDLING
-// ========================
-// 404 handler
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err.stack);
+  
+  // Handle different types of errors
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token'
+    });
+  }
+  
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation error',
+      errors: err.errors
+    });
+  }
+  
+  // Default error
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
+// 404 handler (must be last)
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: 'Endpoint not found',
-    message: `The route ${req.method} ${req.originalUrl} does not exist.`,
+    message: `Route not found: ${req.method} ${req.path}`,
+    availableEndpoints: {
+      documentation: '/api/docs',
+      health: '/api/health',
+      public: '/api',
+      auth: '/api/auth',
+      admin: '/api/admin'
+    }
   });
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled Error:', err);
+// Start server
+const server = app.listen(PORT, () => {
+  console.log('\n🚀 ========================================');
+  console.log('   FC INKIWANJANI API SERVER');
+  console.log('   ========================================');
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Server running on: http://localhost:${PORT}`);
+  console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
+  console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
+  console.log('\n📋 Available Routes:');
+  console.log('   - Public Routes: /api/news, /api/matches, /api/players');
+  console.log('   - Auth Routes: /api/auth/login, /api/auth/signup');
+  console.log('   - Admin Routes: /api/admin/* (requires authentication)');
+  console.log('========================================\n');
+});
 
-  // Default to 500 if no status
-  const statusCode = err.status || err.statusCode || 500;
-
-  res.status(statusCode).json({
-    success: false,
-    error: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    process.exit(0);
   });
 });
 
-// ========================
-// START SERVER
-// ========================
-const PORT = process.env.PORT || 5000;
+process.on('SIGINT', () => {
+  console.log('\n👋 SIGINT signal received: closing HTTP server');
+  process.exit(0);
+});
 
-(async () => {
-  try {
-    // Verify DB connectivity
-    const connection = await db.promisePool.getConnection();
-    connection.release();
-    console.log('✅ Database connection verified.');
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(60));
-      console.log('🐺 FC INKIWANJANI - OFFICIAL API SERVER');
-      console.log('='.repeat(60));
-      console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-      console.log(`📂 Uploads served at: http://localhost:${PORT}/uploads`);
-      console.log('='.repeat(60) + '\n');
-    });
-  } catch (error) {
-    console.error('❌ FATAL: Failed to connect to database.');
-    console.error('Message:', error.message);
-    console.error('\n💡 Ensure MySQL is running and credentials are correct in .env');
-    process.exit(1);
-  }
-})();
+module.exports = app;

@@ -1,59 +1,68 @@
-// db.js
-const mysql = require('mysql2');
+// backend/src/config/database.js
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Create a connection pool for better performance and reliability
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'inkiwanjani_app',
-  password: process.env.DB_PASS || 'InkiApp@2025',
-  database: process.env.DB_NAME || 'fc_inkiwanjani',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  maxIdle: 10,
-  idleTimeout: 60000,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0
-});
+// ================= ENV VALIDATION =================
+const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
 
-// Use the promise-based interface for async/await queries
-const promisePool = pool.promise();
-
-// Test database connection on startup
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('❌ Database connection failed:');
-    console.error('Error Code:', err.code);
-    console.error('Error Message:', err.message);
-
-    if (err.code === 'ECONNREFUSED') {
-      console.error('\n💡 Solution: Make sure MySQL server is running.');
-      console.error('   ▸ Windows: Open Services → Start "MySQL" service');
-      console.error('   ▸ Linux/Mac: Run `sudo service mysql start` or `brew services start mysql`');
-    } else if (err.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('\n💡 Solution: Check DB_USER and DB_PASS in your .env file.');
-    } else if (err.code === 'ER_BAD_DB_ERROR') {
-      console.error('\n💡 Solution: Database not found. Run your SQL setup script first.');
-    }
-
-    process.exit(1); // Stop the app if DB connection fails
-  } else {
-    console.log('✅ Database connection successful!');
-    connection.release();
+requiredEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    console.error(`❌ Missing required environment variable: ${envVar}`);
+    process.exit(1);
   }
 });
 
-// Export query function for convenience
-const query = async (sql, params = []) => {
+// ================= CREATE CONNECTION POOL =================
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+
+  waitForConnections: true,
+  connectionLimit: process.env.DB_CONNECTION_LIMIT
+    ? parseInt(process.env.DB_CONNECTION_LIMIT)
+    : 10,
+  queueLimit: 0,
+
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+
+  timezone: 'Z', // Store dates in UTC
+
+  ssl: process.env.DB_SSL === 'true'
+    ? {
+        rejectUnauthorized: false,
+      }
+    : undefined,
+});
+
+// ================= CONNECTION TEST =================
+(async () => {
   try {
-    const [rows] = await promisePool.query(sql, params);
-    return rows;
-  } catch (err) {
-    console.error('❌ SQL Query Error:', err.message);
-    throw err;
+    const connection = await pool.getConnection();
+    console.log('✅ Database connected successfully');
+    connection.release();
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    process.exit(1); // Fail fast in production
+  }
+})();
+
+// ================= GRACEFUL SHUTDOWN =================
+const shutdown = async () => {
+  try {
+    console.log('🔄 Closing database connection pool...');
+    await pool.end();
+    console.log('✅ Database pool closed.');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error closing database pool:', error.message);
+    process.exit(1);
   }
 };
 
-module.exports = { pool, promisePool, query };
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+module.exports = pool;
