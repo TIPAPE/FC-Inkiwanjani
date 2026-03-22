@@ -4,11 +4,13 @@ const { query } = require('../config/database');
 exports.getPublishedNews = async (req, res) => {
   try {
     const rows = await query(
-      `SELECT id, title, category, excerpt, published_date, author, views
-       FROM news
-       WHERE is_published = TRUE
-       ORDER BY published_date DESC
-       LIMIT 20`
+      `SELECT n.newsID, n.title, n.category, n.excerpt, n.published_date, n.author, n.views,
+              a.full_name as admin_name, a.email as admin_email
+       FROM news n
+       JOIN admin_users a ON n.adminUserID = a.adminUserID
+       WHERE n.is_published = TRUE
+       ORDER BY n.published_date DESC
+       LIMIT 20`  // ✅ CHANGED: id → newsID, added admin join
     );
     res.json({ success: true, data: rows });
   } catch (err) {
@@ -19,12 +21,14 @@ exports.getPublishedNews = async (req, res) => {
 
 exports.getNewsById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params;  // ✅ Keep as 'id' in route params
     const rows = await query(
-      `SELECT id, title, category, excerpt, content, published_date, author, views
-       FROM news
-       WHERE id = ? AND is_published = TRUE
-       LIMIT 1`,
+      `SELECT n.newsID, n.title, n.category, n.excerpt, n.content, n.published_date, n.author, n.views,
+              a.full_name as admin_name, a.email as admin_email
+       FROM news n
+       JOIN admin_users a ON n.adminUserID = a.adminUserID
+       WHERE n.newsID = ? AND n.is_published = TRUE
+       LIMIT 1`,  // ✅ CHANGED: id → newsID, added admin join
       [id]
     );
 
@@ -33,7 +37,7 @@ exports.getNewsById = async (req, res) => {
     }
 
     // Increment views (fire-and-forget)
-    query(`UPDATE news SET views = views + 1 WHERE id = ?`, [id]).catch((e) => {
+    query(`UPDATE news SET views = views + 1 WHERE newsID = ?`, [id]).catch((e) => {  // ✅ CHANGED
       console.error('Failed to increment views for news id', id, e);
     });
 

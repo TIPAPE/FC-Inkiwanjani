@@ -4,10 +4,10 @@ const { query } = require('../config/database');
 exports.getMatches = async (req, res) => {
   try {
     const rows = await query(
-      `SELECT id, opponent, match_date, venue, competition, status, home_score, away_score, summary
+      `SELECT matchID, opponent, match_date, venue, competition, status, home_score, away_score, summary
        FROM matches
        ORDER BY match_date DESC
-       LIMIT 50`
+       LIMIT 50`  // ✅ CHANGED: id → matchID
     );
     res.json({ success: true, data: rows });
   } catch (err) {
@@ -19,11 +19,11 @@ exports.getMatches = async (req, res) => {
 exports.getNextMatch = async (req, res) => {
   try {
     const rows = await query(
-      `SELECT id, opponent, match_date, venue, competition, status
+      `SELECT matchID, opponent, match_date, venue, competition, status
        FROM matches
        WHERE status IN ('upcoming','live') AND match_date >= NOW()
        ORDER BY match_date ASC
-       LIMIT 1`
+       LIMIT 1`  // ✅ CHANGED: id → matchID
     );
     if (!rows.length) return res.json({ success: true, data: null });
     res.json({ success: true, data: rows[0] });
@@ -36,11 +36,11 @@ exports.getNextMatch = async (req, res) => {
 exports.getLastMatch = async (req, res) => {
   try {
     const rows = await query(
-      `SELECT id, opponent, match_date, venue, competition, status, home_score, away_score
+      `SELECT matchID, opponent, match_date, venue, competition, status, home_score, away_score
        FROM matches
        WHERE status = 'completed' AND match_date <= NOW()
        ORDER BY match_date DESC
-       LIMIT 1`
+       LIMIT 1`  // ✅ CHANGED: id → matchID
     );
     if (!rows.length) return res.json({ success: true, data: null });
     res.json({ success: true, data: rows[0] });
@@ -52,9 +52,9 @@ exports.getLastMatch = async (req, res) => {
 
 exports.getMatchById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params;  // ✅ Keep as 'id' in route params
     const rows = await query(
-      `SELECT * FROM matches WHERE id = ? LIMIT 1`,
+      `SELECT * FROM matches WHERE matchID = ? LIMIT 1`,  // ✅ CHANGED: id → matchID
       [id]
     );
     if (!rows.length) return res.status(404).json({ success: false, error: 'Match not found' });

@@ -7,6 +7,7 @@ const Match = require('../models/Match');
 const News = require('../models/News');
 const Settings = require('../models/Settings');
 const Booking = require('../models/Booking');
+const auth = require('../middleware/auth');
 
 // ================== HELPERS ==================
 const sendError = (res, status, message, data = undefined) => {
@@ -190,13 +191,13 @@ router.get('/matches', async (req, res) => {
 // Get match by ID
 router.get('/matches/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params;  // ✅ Keep as 'id' in route params
 
     if (!isValidId(id)) {
       return sendError(res, 400, 'Invalid match id');
     }
 
-    const match = await Match.getById(id);
+    const match = await Match.getById(id);  // ✅ Pass to model which expects matchID
 
     if (!match) {
       return sendError(res, 404, 'Match not found');
@@ -306,25 +307,32 @@ router.get('/settings/club-info', async (req, res) => {
 
 // ================== BOOKINGS ROUTES (Public) ==================
 
-// Create a booking (public)
-router.post('/bookings', async (req, res) => {
+// Create a booking (public) - ✅ NOW REQUIRES AUTHENTICATION
+router.post('/bookings', auth, async (req, res) => {  // ✅ ADDED: auth middleware
   try {
-    const match_id = toInt(req.body?.match_id);
+    const matchID = toInt(req.body?.matchID || req.body?.match_id);  // ✅ CHANGED: support both
     const customer_name = safeTrim(req.body?.customer_name);
     const customer_email = safeTrim(req.body?.customer_email)?.toLowerCase();
     const customer_phone = safeTrim(req.body?.customer_phone);
     const ticket_type = safeTrim(req.body?.ticket_type);
     const quantity = toInt(req.body?.quantity);
 
+    // ✅ ADDED: Get userID from authenticated user
+    const userID = req.user?.id;  // From auth middleware
+
+    if (!userID) {
+      return sendError(res, 401, 'Authentication required to create booking');
+    }
+
     if (
-      match_id === null ||
+      matchID === null ||
       !customer_name ||
       !customer_email ||
       !customer_phone ||
       !ticket_type ||
       quantity === null
     ) {
-      return sendError(res, 400, 'All fields are required: match_id, customer_name, customer_email, customer_phone, ticket_type, quantity');
+      return sendError(res, 400, 'All fields are required: matchID, customer_name, customer_email, customer_phone, ticket_type, quantity');
     }
 
     if (!isValidEmail(customer_email)) {
@@ -340,12 +348,12 @@ router.post('/bookings', async (req, res) => {
     }
 
     // Ensure match exists
-    const match = await Match.getById(match_id);
+    const match = await Match.getById(matchID);  // ✅ CHANGED: match_id → matchID
     if (!match) {
       return sendError(res, 404, 'Match not found');
     }
 
-    // Calculate total on server (don’t trust frontend)
+    // Calculate total on server (don't trust frontend)
     const prices = await Settings.getTicketPrices();
     const unitPrice = toFloat(prices?.[ticket_type]);
 
@@ -356,7 +364,8 @@ router.post('/bookings', async (req, res) => {
     const total_amount = unitPrice * quantity;
 
     const booking = await Booking.create({
-      match_id,
+      matchID,  // ✅ CHANGED
+      userID,   // ✅ ADDED
       customer_name,
       customer_email,
       customer_phone,
@@ -372,8 +381,7 @@ router.post('/bookings', async (req, res) => {
   }
 });
 
-// Get bookings for a customer (public) — PRODUCTION SAFE MODE
-// Require ?email= so we don’t expose all bookings publicly
+// Get bookings for a customer (public)
 router.get('/bookings', async (req, res) => {
   try {
     const email = safeTrim(req.query?.email)?.toLowerCase();
@@ -386,14 +394,9 @@ router.get('/bookings', async (req, res) => {
       return sendError(res, 400, 'Invalid email', []);
     }
 
-    // If your Booking model doesn’t have getByEmail yet,
-    // keep getAll() for now BUT FILTER HERE so we don’t leak data.
-    const bookings = await Booking.getAll();
-    const filtered = Array.isArray(bookings)
-      ? bookings.filter((b) => (b.customer_email || '').toLowerCase() === email)
-      : [];
+    const bookings = await Booking.getByEmail(email);  // ✅ This already works with new schema
 
-    return sendSuccess(res, 200, filtered);
+    return sendSuccess(res, 200, bookings);
   } catch (error) {
     console.error('Get bookings error:', error);
     return sendError(res, 500, 'Failed to fetch bookings', []);

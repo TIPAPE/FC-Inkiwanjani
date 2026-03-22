@@ -14,9 +14,9 @@ exports.getSummary = async (req, res) => {
   try {
     // Pull completed matches
     const matches = await query(
-      `SELECT id, venue, home_score, away_score, match_date
+      `SELECT matchID, venue, home_score, away_score, match_date
        FROM matches
-       WHERE status = 'completed'`
+       WHERE status = 'completed'`  // ✅ CHANGED: id → matchID
     );
 
     let played = 0;

@@ -20,13 +20,13 @@ class Player {
   }
 
   // Get player by ID (active only)
-  static async getById(id) {
-    const playerId = this._toInt(id, null);
-    if (!playerId) return null;
+  static async getById(playerID) {  // ✅ CHANGED: parameter id → playerID
+    const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+    if (!id) return null;
 
     const [rows] = await db.query(
-      'SELECT * FROM players WHERE id = ? AND is_active = TRUE',
-      [playerId]
+      'SELECT * FROM players WHERE playerID = ? AND is_active = TRUE',  // ✅ CHANGED
+      [id]
     );
     return rows[0] || null;
   }
@@ -38,23 +38,25 @@ class Player {
       const jersey_number = this._toInt(playerData?.jersey_number, null);
       const position = this._toString(playerData?.position);
       const age = this._toInt(playerData?.age, null);
+      const matchID = playerData?.matchID ? this._toInt(playerData.matchID, null) : null;  // ✅ ADDED: matchID support
 
       if (!name || !jersey_number || !position || !age) {
         throw new Error('All fields are required');
       }
 
       const [result] = await db.query(
-        `INSERT INTO players (name, jersey_number, position, age)
-         VALUES (?, ?, ?, ?)`,
-        [name, jersey_number, position, age]
+        `INSERT INTO players (name, jersey_number, position, age, matchID)
+         VALUES (?, ?, ?, ?, ?)`,  // ✅ CHANGED: added matchID
+        [name, jersey_number, position, age, matchID]  // ✅ CHANGED
       );
 
       return {
-        id: result.insertId,
+        playerID: result.insertId,  // ✅ CHANGED: id → playerID
         name,
         jersey_number,
         position,
         age,
+        matchID,  // ✅ ADDED
         goals: 0,
         assists: 0,
         appearances: 0,
@@ -70,9 +72,9 @@ class Player {
   }
 
   // Update player stats (active only)
-  static async updateStats(id, stats) {
-    const playerId = this._toInt(id, null);
-    if (!playerId) throw new Error('Player not found');
+  static async updateStats(playerID, stats) {  // ✅ CHANGED: parameter id → playerID
+    const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+    if (!id) throw new Error('Player not found');
 
     const goals = this._toInt(stats?.goals, 0);
     const assists = this._toInt(stats?.assists, 0);
@@ -83,44 +85,54 @@ class Player {
     const [result] = await db.query(
       `UPDATE players
        SET goals = ?, assists = ?, appearances = ?, yellow_cards = ?, red_cards = ?
-       WHERE id = ? AND is_active = TRUE`,
-      [goals, assists, appearances, yellow_cards, red_cards, playerId]
+       WHERE playerID = ? AND is_active = TRUE`,  // ✅ CHANGED
+      [goals, assists, appearances, yellow_cards, red_cards, id]
     );
 
     if (result.affectedRows === 0) {
       throw new Error('Player not found');
     }
 
-    return this.getById(playerId);
+    return this.getById(id);
   }
 
   // Update player basic info (active only)
-  static async update(id, playerData) {
+  static async update(playerID, playerData) {  // ✅ CHANGED: parameter id → playerID
     try {
-      const playerId = this._toInt(id, null);
-      if (!playerId) throw new Error('Player not found');
+      const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+      if (!id) throw new Error('Player not found');
 
       const name = this._toString(playerData?.name);
       const jersey_number = this._toInt(playerData?.jersey_number, null);
       const position = this._toString(playerData?.position);
       const age = this._toInt(playerData?.age, null);
+      const matchID = playerData?.matchID !== undefined ? this._toInt(playerData.matchID, null) : undefined;  // ✅ ADDED
 
       if (!name || !jersey_number || !position || !age) {
         throw new Error('All fields are required');
       }
 
-      const [result] = await db.query(
-        `UPDATE players
-         SET name = ?, jersey_number = ?, position = ?, age = ?
-         WHERE id = ? AND is_active = TRUE`,
-        [name, jersey_number, position, age, playerId]
-      );
+      // ✅ CHANGED: Handle optional matchID update
+      let query, params;
+      if (matchID !== undefined) {
+        query = `UPDATE players
+                 SET name = ?, jersey_number = ?, position = ?, age = ?, matchID = ?
+                 WHERE playerID = ? AND is_active = TRUE`;
+        params = [name, jersey_number, position, age, matchID, id];
+      } else {
+        query = `UPDATE players
+                 SET name = ?, jersey_number = ?, position = ?, age = ?
+                 WHERE playerID = ? AND is_active = TRUE`;
+        params = [name, jersey_number, position, age, id];
+      }
+
+      const [result] = await db.query(query, params);
 
       if (result.affectedRows === 0) {
         throw new Error('Player not found');
       }
 
-      return this.getById(playerId);
+      return this.getById(id);
     } catch (error) {
       if (error?.code === 'ER_DUP_ENTRY') {
         throw new Error('Jersey number already in use');
@@ -130,13 +142,13 @@ class Player {
   }
 
   // Soft delete player
-  static async delete(id) {
-    const playerId = this._toInt(id, null);
-    if (!playerId) throw new Error('Player not found');
+  static async delete(playerID) {  // ✅ CHANGED: parameter id → playerID
+    const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+    if (!id) throw new Error('Player not found');
 
     const [result] = await db.query(
-      'UPDATE players SET is_active = FALSE WHERE id = ? AND is_active = TRUE',
-      [playerId]
+      'UPDATE players SET is_active = FALSE WHERE playerID = ? AND is_active = TRUE',  // ✅ CHANGED
+      [id]
     );
 
     if (result.affectedRows === 0) {
@@ -171,6 +183,20 @@ class Player {
        WHERE position = ? AND is_active = TRUE
        ORDER BY jersey_number ASC`,
       [pos]
+    );
+    return rows;
+  }
+
+  // ✅ ADDED: Get players by match (optional - for squad management)
+  static async getByMatch(matchID) {
+    const id = this._toInt(matchID, null);
+    if (!id) return [];
+
+    const [rows] = await db.query(
+      `SELECT * FROM players
+       WHERE matchID = ? AND is_active = TRUE
+       ORDER BY jersey_number ASC`,
+      [id]
     );
     return rows;
   }

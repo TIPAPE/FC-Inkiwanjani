@@ -31,11 +31,11 @@ class Match {
   }
 
   // Get match by ID
-  static async getById(id) {
-    const matchId = this._toInt(id, null);
-    if (!matchId) return null;
+  static async getById(matchID) {  // ✅ CHANGED: parameter id → matchID
+    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+    if (!id) return null;
 
-    const [rows] = await db.query('SELECT * FROM matches WHERE id = ?', [matchId]);
+    const [rows] = await db.query('SELECT * FROM matches WHERE matchID = ?', [id]);  // ✅ CHANGED
     return rows[0] || null;
   }
 
@@ -114,7 +114,7 @@ class Match {
     );
 
     return {
-      id: result.insertId,
+      matchID: result.insertId,  // ✅ CHANGED: id → matchID
       opponent,
       match_date,
       venue,
@@ -128,9 +128,9 @@ class Match {
   }
 
   // Update match result (marks match completed)
-  static async updateResult(id, resultData) {
-    const matchId = this._toInt(id, null);
-    if (!matchId) throw new Error('Match not found');
+  static async updateResult(matchID, resultData) {  // ✅ CHANGED: parameter id → matchID
+    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+    if (!id) throw new Error('Match not found');
 
     // Scores are required for a completed match
     const home_score =
@@ -161,21 +161,21 @@ class Match {
            away_score = ?,
            summary = ?,
            attendance = ?
-       WHERE id = ?`,
-      [home_score, away_score, summary, attendance, matchId]
+       WHERE matchID = ?`,  // ✅ CHANGED: id → matchID
+      [home_score, away_score, summary, attendance, id]
     );
 
     if (result.affectedRows === 0) {
       throw new Error('Match not found');
     }
 
-    return this.getById(matchId);
+    return this.getById(id);
   }
 
   // Update match details (does not change status automatically)
-  static async update(id, matchData) {
-    const matchId = this._toInt(id, null);
-    if (!matchId) throw new Error('Match not found');
+  static async update(matchID, matchData) {  // ✅ CHANGED: parameter id → matchID
+    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+    if (!id) throw new Error('Match not found');
 
     const opponent = this._toString(matchData?.opponent);
     const match_date = this._normalizeDateTime(matchData?.match_date);
@@ -200,23 +200,23 @@ class Match {
     const [result] = await db.query(
       `UPDATE matches
        SET opponent = ?, match_date = ?, venue = ?, competition = ?
-       WHERE id = ?`,
-      [opponent, match_date, venue, competition, matchId]
+       WHERE matchID = ?`,  // ✅ CHANGED: id → matchID
+      [opponent, match_date, venue, competition, id]
     );
 
     if (result.affectedRows === 0) {
       throw new Error('Match not found');
     }
 
-    return this.getById(matchId);
+    return this.getById(id);
   }
 
   // Delete match (hard delete; bookings cascade per schema)
-  static async delete(id) {
-    const matchId = this._toInt(id, null);
-    if (!matchId) throw new Error('Match not found');
+  static async delete(matchID) {  // ✅ CHANGED: parameter id → matchID
+    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+    if (!id) throw new Error('Match not found');
 
-    const [result] = await db.query('DELETE FROM matches WHERE id = ?', [matchId]);
+    const [result] = await db.query('DELETE FROM matches WHERE matchID = ?', [id]);  // ✅ CHANGED
 
     if (result.affectedRows === 0) {
       throw new Error('Match not found');

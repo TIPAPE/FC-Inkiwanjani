@@ -83,7 +83,7 @@ class AdminUser {
       );
 
       return {
-        id: result.insertId,
+        adminUserID: result.insertId,  // ✅ CHANGED: id → adminUserID
         username: clean.username,
         email: clean.email,
         full_name: clean.full_name,
@@ -134,14 +134,14 @@ class AdminUser {
    * IMPORTANT: returns null for deactivated admins. Auth middleware MUST
    * treat a null return as 401 Unauthorized, not a 500 error.
    */
-  static async findById(id) {
-    if (!id) return null;
+  static async findById(adminUserID) {  // ✅ CHANGED: parameter id → adminUserID
+    if (!adminUserID) return null;  // ✅ CHANGED
     const [rows] = await pool.execute(
-      `SELECT id, username, email, full_name, role, is_active, last_login, created_at, updated_at
+      `SELECT adminUserID, username, email, full_name, role, is_active, last_login, created_at  
        FROM admin_users
-       WHERE id = ? AND is_active = TRUE
+       WHERE adminUserID = ? AND is_active = TRUE
        LIMIT 1`,
-      [id]
+      [adminUserID]  // ✅ CHANGED: id → adminUserID, removed updated_at
     );
     return rows[0] || null;
   }
@@ -152,7 +152,7 @@ class AdminUser {
    */
   static async findAll() {
     const [rows] = await pool.execute(
-      `SELECT id, username, email, full_name, role, last_login, created_at, updated_at
+      `SELECT adminUserID, username, email, full_name, role, last_login, created_at  
        FROM admin_users
        WHERE is_active = TRUE
        ORDER BY created_at DESC`
@@ -169,11 +169,11 @@ class AdminUser {
   }
 
   /** Stamp last_login = NOW(). Called immediately after successful login. */
-  static async updateLastLogin(id) {
-    if (!id) return false;
+  static async updateLastLogin(adminUserID) {  // ✅ CHANGED: parameter id → adminUserID
+    if (!adminUserID) return false;  // ✅ CHANGED
     await pool.execute(
-      'UPDATE admin_users SET last_login = NOW() WHERE id = ?',
-      [id]
+      'UPDATE admin_users SET last_login = NOW() WHERE adminUserID = ?',  // ✅ CHANGED
+      [adminUserID]  // ✅ CHANGED
     );
     return true;
   }
@@ -185,10 +185,10 @@ class AdminUser {
    * Throws if an explicitly supplied role value is not in ALLOWED_ROLES,
    * so invalid roles are rejected loudly instead of silently ignored.
    */
-  static async updateProfile(id, { full_name, role } = {}) {
-    if (!id) throw new Error('Admin id is required');
+  static async updateProfile(adminUserID, { full_name, role } = {}) {  // ✅ CHANGED: parameter id → adminUserID
+    if (!adminUserID) throw new Error('Admin adminUserID is required');  // ✅ CHANGED
 
-    const existing = await this.findById(id);
+    const existing = await this.findById(adminUserID);  // ✅ CHANGED
     if (!existing) throw new Error('Admin user not found');
 
     // Validate role only if explicitly supplied
@@ -206,13 +206,12 @@ class AdminUser {
     await pool.execute(
       `UPDATE admin_users
        SET full_name  = COALESCE(?, full_name),
-           role       = COALESCE(?, role),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND is_active = TRUE`,
-      [cleanName || null, role || null, id]
+           role       = COALESCE(?, role)
+       WHERE adminUserID = ? AND is_active = TRUE`,  // ✅ CHANGED: id → adminUserID, removed updated_at
+      [cleanName || null, role || null, adminUserID]  // ✅ CHANGED
     );
 
-    return this.findById(id);
+    return this.findById(adminUserID);  // ✅ CHANGED
   }
 
   /**
@@ -220,8 +219,8 @@ class AdminUser {
    * Requires the current password to be provided and verified first.
    * Returns true on success, throws on any failure.
    */
-  static async changePassword(id, { current_password, new_password } = {}) {
-    if (!id) throw new Error('Admin id is required');
+  static async changePassword(adminUserID, { current_password, new_password } = {}) {  
+    if (!adminUserID) throw new Error('Admin adminUserID is required');  
     if (!current_password || !new_password) {
       throw new Error('Both current_password and new_password are required');
     }
@@ -236,8 +235,8 @@ class AdminUser {
 
     // Fetch full row (including hash) directly by ID — bypass findById which strips hash
     const [rows] = await pool.execute(
-      'SELECT id, password_hash FROM admin_users WHERE id = ? AND is_active = TRUE LIMIT 1',
-      [id]
+      'SELECT adminUserID, password_hash FROM admin_users WHERE adminUserID = ? AND is_active = TRUE LIMIT 1',  // ✅ CHANGED
+      [adminUserID]  // ✅ CHANGED
     );
     const admin = rows[0];
     if (!admin) throw new Error('Admin user not found');
@@ -247,8 +246,8 @@ class AdminUser {
 
     const new_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
     await pool.execute(
-      'UPDATE admin_users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [new_hash, id]
+      'UPDATE admin_users SET password_hash = ? WHERE adminUserID = ?',  // ✅ CHANGED: removed updated_at
+      [new_hash, adminUserID]  // ✅ CHANGED
     );
 
     return true;
@@ -260,10 +259,10 @@ class AdminUser {
    * Soft-delete an admin (sets is_active = FALSE).
    * Guards against deactivating the last active super_admin to prevent lockout.
    */
-  static async deactivate(id) {
-    if (!id) throw new Error('Admin id is required');
+  static async deactivate(adminUserID) {  
+    if (!adminUserID) throw new Error('Admin adminUserID is required');  
 
-    const target = await this.findById(id);
+    const target = await this.findById(adminUserID);  
     if (!target) throw new Error('Admin user not found or already inactive');
 
     // Lockout guard: never deactivate the last active super_admin
@@ -280,8 +279,8 @@ class AdminUser {
     }
 
     await pool.execute(
-      'UPDATE admin_users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [id]
+      'UPDATE admin_users SET is_active = FALSE WHERE adminUserID = ?',  // ✅ CHANGED: removed updated_at
+      [adminUserID]  // ✅ CHANGED
     );
     return true;
   }

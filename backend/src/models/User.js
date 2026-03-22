@@ -19,7 +19,7 @@ class User {
       );
 
       return {
-        id: result.insertId,
+        userID: result.insertId,  // ✅ CHANGED: id → userID
         username,
         email,
         full_name,
@@ -61,13 +61,13 @@ class User {
   }
 
   // Find user by ID (safe fields only)
-  static async findById(id) {
+  static async findById(userID) {  // ✅ CHANGED: parameter id → userID
     const [rows] = await pool.execute(
-      `SELECT id, username, email, full_name, phone, last_login, created_at, updated_at
+      `SELECT userID, username, email, full_name, phone, last_login, created_at  
        FROM users
-       WHERE id = ? AND is_active = TRUE
+       WHERE userID = ? AND is_active = TRUE
        LIMIT 1`,
-      [id]
+      [userID]  // ✅ CHANGED: id → userID
     );
     return rows[0] || null;
   }
@@ -75,7 +75,7 @@ class User {
   // Get all active users (admin use)
   static async findAll() {
     const [rows] = await pool.execute(
-      `SELECT id, username, email, full_name, phone, last_login, created_at, updated_at
+      `SELECT userID, username, email, full_name, phone, last_login, created_at  
        FROM users
        WHERE is_active = TRUE
        ORDER BY created_at DESC`
@@ -89,30 +89,29 @@ class User {
   }
 
   // Update last login
-  static async updateLastLogin(id) {
-    await pool.execute('UPDATE users SET last_login = NOW() WHERE id = ?', [id]);
+  static async updateLastLogin(userID) {  // ✅ CHANGED: parameter id → userID
+    await pool.execute('UPDATE users SET last_login = NOW() WHERE userID = ?', [userID]);  // ✅ CHANGED
     return true;
   }
 
   // Update basic profile details (optional future use)
-  static async updateProfile(id, { full_name, phone }) {
+  static async updateProfile(userID, { full_name, phone }) {  // ✅ CHANGED: parameter id → userID
     await pool.execute(
       `UPDATE users
        SET full_name = COALESCE(?, full_name),
-           phone = COALESCE(?, phone),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND is_active = TRUE`,
-      [full_name ?? null, phone ?? null, id]
+           phone = COALESCE(?, phone)
+       WHERE userID = ? AND is_active = TRUE`,  // ✅ CHANGED: id → userID, removed updated_at
+      [full_name ?? null, phone ?? null, userID]  // ✅ CHANGED
     );
 
-    return this.findById(id);
+    return this.findById(userID);  // ✅ CHANGED
   }
 
   // Soft delete / deactivate account
-  static async deactivate(id) {
+  static async deactivate(userID) {  // ✅ CHANGED: parameter id → userID
     await pool.execute(
-      'UPDATE users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [id]
+      'UPDATE users SET is_active = FALSE WHERE userID = ?',  // ✅ CHANGED: removed updated_at
+      [userID]  // ✅ CHANGED
     );
     return true;
   }

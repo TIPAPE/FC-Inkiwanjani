@@ -37,33 +37,41 @@ class Booking {
     return `BK${datePart}${rand}`;
   }
 
-  static async _matchExists(matchId) {
-    const [rows] = await db.query('SELECT id FROM matches WHERE id = ? LIMIT 1', [matchId]);
+  static async _matchExists(matchID) {  // ✅ CHANGED: parameter matchId → matchID
+    const [rows] = await db.query('SELECT matchID FROM matches WHERE matchID = ? LIMIT 1', [matchID]);  // ✅ CHANGED
     return !!rows[0];
   }
 
-  // Get all bookings (includes match metadata)
+  // ✅ ADDED: Check if user exists
+  static async _userExists(userID) {
+    const [rows] = await db.query('SELECT userID FROM users WHERE userID = ? AND is_active = TRUE LIMIT 1', [userID]);
+    return !!rows[0];
+  }
+
+  // Get all bookings (includes match metadata and user info)
   static async getAll() {
     const [rows] = await db.query(
-      `SELECT b.*, m.opponent, m.match_date, m.venue
+      `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.match_id = m.id
-       ORDER BY b.booking_date DESC`
+       JOIN matches m ON b.matchID = m.matchID
+       JOIN users u ON b.userID = u.userID
+       ORDER BY b.booking_date DESC`  // ✅ CHANGED: match_id → matchID, added user join
     );
     return rows;
   }
 
   // Get booking by ID
-  static async getById(id) {
-    const bookingId = this._toInt(id, null);
-    if (!bookingId) return null;
+  static async getById(bookingID) {  // ✅ CHANGED: parameter id → bookingID
+    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+    if (!id) return null;
 
     const [rows] = await db.query(
-      `SELECT b.*, m.opponent, m.match_date, m.venue
+      `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.match_id = m.id
-       WHERE b.id = ?`,
-      [bookingId]
+       JOIN matches m ON b.matchID = m.matchID
+       JOIN users u ON b.userID = u.userID
+       WHERE b.bookingID = ?`,  // ✅ CHANGED: id → bookingID, match_id → matchID, added user join
+      [id]
     );
     return rows[0] || null;
   }
@@ -74,26 +82,44 @@ class Booking {
     if (!ref) return null;
 
     const [rows] = await db.query(
-      `SELECT b.*, m.opponent, m.match_date, m.venue
+      `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.match_id = m.id
-       WHERE b.booking_reference = ?`,
+       JOIN matches m ON b.matchID = m.matchID
+       JOIN users u ON b.userID = u.userID
+       WHERE b.booking_reference = ?`,  // ✅ CHANGED: match_id → matchID, added user join
       [ref]
     );
     return rows[0] || null;
   }
 
   // Get bookings by match
-  static async getByMatch(matchId) {
-    const mId = this._toInt(matchId, null);
+  static async getByMatch(matchID) {  // ✅ CHANGED: parameter matchId → matchID
+    const mId = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
     if (!mId) return [];
 
     const [rows] = await db.query(
-      `SELECT *
-       FROM bookings
-       WHERE match_id = ?
-       ORDER BY booking_date DESC`,
+      `SELECT b.*, u.full_name as user_name, u.email as user_email
+       FROM bookings b
+       JOIN users u ON b.userID = u.userID
+       WHERE b.matchID = ?
+       ORDER BY b.booking_date DESC`,  // ✅ CHANGED: match_id → matchID, added user join
       [mId]
+    );
+    return rows;
+  }
+
+  // ✅ ADDED: Get bookings by user
+  static async getByUser(userID) {
+    const uId = this._toInt(userID, null);
+    if (!uId) return [];
+
+    const [rows] = await db.query(
+      `SELECT b.*, m.opponent, m.match_date, m.venue
+       FROM bookings b
+       JOIN matches m ON b.matchID = m.matchID
+       WHERE b.userID = ?
+       ORDER BY b.booking_date DESC`,
+      [uId]
     );
     return rows;
   }
@@ -104,11 +130,12 @@ class Booking {
     if (!normalized) return [];
 
     const [rows] = await db.query(
-      `SELECT b.*, m.opponent, m.match_date, m.venue
+      `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name
        FROM bookings b
-       JOIN matches m ON b.match_id = m.id
+       JOIN matches m ON b.matchID = m.matchID
+       JOIN users u ON b.userID = u.userID
        WHERE b.customer_email = ?
-       ORDER BY b.booking_date DESC`,
+       ORDER BY b.booking_date DESC`,  // ✅ CHANGED: match_id → matchID, added user join
       [normalized]
     );
     return rows;
@@ -116,7 +143,8 @@ class Booking {
 
   // Create booking
   static async create(bookingData) {
-    const match_id = this._toInt(bookingData?.match_id, null);
+    const matchID = this._toInt(bookingData?.matchID || bookingData?.match_id, null);  // ✅ CHANGED: support both for backward compatibility
+    const userID = this._toInt(bookingData?.userID, null);  // ✅ ADDED: required userID
     const customer_name = this._toString(bookingData?.customer_name);
     const customer_email = this._normalizeEmail(bookingData?.customer_email);
     const customer_phone = this._toString(bookingData?.customer_phone);
@@ -127,7 +155,8 @@ class Booking {
     const total_amount_raw = this._toNumber(bookingData?.total_amount, null);
 
     if (
-      !match_id ||
+      !matchID ||
+      !userID ||  // ✅ ADDED: userID is required
       !customer_name ||
       !customer_email ||
       !customer_phone ||
@@ -147,9 +176,15 @@ class Booking {
     }
 
     // Ensure match exists (clearer error than FK failure)
-    const exists = await this._matchExists(match_id);
-    if (!exists) {
+    const matchExists = await this._matchExists(matchID);
+    if (!matchExists) {
       throw new Error('Match not found');
+    }
+
+    // ✅ ADDED: Ensure user exists
+    const userExists = await this._userExists(userID);
+    if (!userExists) {
+      throw new Error('User not found');
     }
 
     // Money validation
@@ -174,11 +209,12 @@ class Booking {
       try {
         const [result] = await db.query(
           `INSERT INTO bookings
-           (match_id, customer_name, customer_email, customer_phone,
+           (matchID, userID, customer_name, customer_email, customer_phone,
             ticket_type, quantity, total_amount, booking_reference, payment_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,  // ✅ CHANGED: match_id → matchID, added userID
           [
-            match_id,
+            matchID,  // ✅ CHANGED
+            userID,   // ✅ ADDED
             customer_name,
             customer_email,
             customer_phone,
@@ -191,8 +227,9 @@ class Booking {
         );
 
         return {
-          id: result.insertId,
-          match_id,
+          bookingID: result.insertId,  // ✅ CHANGED: id → bookingID
+          matchID,  // ✅ CHANGED
+          userID,   // ✅ ADDED
           customer_name,
           customer_email,
           customer_phone,
@@ -215,9 +252,9 @@ class Booking {
   }
 
   // Update payment status
-  static async updatePaymentStatus(id, status) {
-    const bookingId = this._toInt(id, null);
-    if (!bookingId) throw new Error('Booking not found');
+  static async updatePaymentStatus(bookingID, status) {  // ✅ CHANGED: parameter id → bookingID
+    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+    if (!id) throw new Error('Booking not found');
 
     const s = this._toString(status);
     const allowed = ['pending', 'paid', 'cancelled'];
@@ -227,25 +264,25 @@ class Booking {
     }
 
     const [result] = await db.query(
-      'UPDATE bookings SET payment_status = ? WHERE id = ?',
-      [s, bookingId]
+      'UPDATE bookings SET payment_status = ? WHERE bookingID = ?',  // ✅ CHANGED
+      [s, id]
     );
 
     if (result.affectedRows === 0) {
       throw new Error('Booking not found');
     }
 
-    return this.getById(bookingId);
+    return this.getById(id);
   }
 
   // Cancel booking
-  static async cancel(id) {
-    const bookingId = this._toInt(id, null);
-    if (!bookingId) throw new Error('Booking not found');
+  static async cancel(bookingID) {  // ✅ CHANGED: parameter id → bookingID
+    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+    if (!id) throw new Error('Booking not found');
 
     const [result] = await db.query(
-      'UPDATE bookings SET payment_status = ? WHERE id = ?',
-      ['cancelled', bookingId]
+      'UPDATE bookings SET payment_status = ? WHERE bookingID = ?',  // ✅ CHANGED
+      ['cancelled', id]
     );
 
     if (result.affectedRows === 0) {
@@ -256,11 +293,11 @@ class Booking {
   }
 
   // Delete booking
-  static async delete(id) {
-    const bookingId = this._toInt(id, null);
-    if (!bookingId) throw new Error('Booking not found');
+  static async delete(bookingID) {  // ✅ CHANGED: parameter id → bookingID
+    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+    if (!id) throw new Error('Booking not found');
 
-    const [result] = await db.query('DELETE FROM bookings WHERE id = ?', [bookingId]);
+    const [result] = await db.query('DELETE FROM bookings WHERE bookingID = ?', [id]);  // ✅ CHANGED
 
     if (result.affectedRows === 0) {
       throw new Error('Booking not found');
@@ -300,19 +337,19 @@ class Booking {
   static async getRevenueByMatch() {
     const [rows] = await db.query(
       `SELECT
-         m.id,
+         m.matchID,  
          m.opponent,
          m.match_date,
-         COUNT(b.id) as total_bookings,
+         COUNT(b.bookingID) as total_bookings,
          COALESCE(SUM(b.quantity), 0) as total_tickets,
          COALESCE(SUM(b.total_amount), 0) as total_revenue,
          COALESCE(SUM(CASE WHEN b.ticket_type = 'vip' THEN b.quantity ELSE 0 END), 0) as vip_tickets,
          COALESCE(SUM(CASE WHEN b.ticket_type = 'regular' THEN b.quantity ELSE 0 END), 0) as regular_tickets,
          COALESCE(SUM(CASE WHEN b.ticket_type = 'student' THEN b.quantity ELSE 0 END), 0) as student_tickets
        FROM matches m
-       LEFT JOIN bookings b ON m.id = b.match_id
-       GROUP BY m.id, m.opponent, m.match_date
-       ORDER BY m.match_date DESC`
+       LEFT JOIN bookings b ON m.matchID = b.matchID
+       GROUP BY m.matchID, m.opponent, m.match_date
+       ORDER BY m.match_date DESC`  // ✅ CHANGED: id → matchID, match_id → matchID
     );
     return rows;
   }

@@ -22,9 +22,12 @@ const generateToken = (user, isAdmin = false) => {
   // - Users: "user"
   const role = isAdmin ? (user.role || 'editor') : 'user';
 
+  // ✅ CHANGED: Use userID or adminUserID instead of id
+  const userId = isAdmin ? user.adminUserID : user.userID;
+
   return jwt.sign(
     {
-      id: user.id,
+      id: userId,  // ✅ CHANGED: use correct ID field
       email: user.email,
       username: user.username,
       isAdmin,
@@ -40,8 +43,9 @@ const generateToken = (user, isAdmin = false) => {
 const sanitizeUser = (user, isAdmin = false) => {
   if (!user) return null;
 
+  // ✅ CHANGED: Return userID or adminUserID instead of id
   return {
-    id: user.id,
+    id: isAdmin ? user.adminUserID : user.userID,  // ✅ CHANGED
     username: user.username,
     email: user.email,
     full_name: user.full_name,
@@ -214,11 +218,12 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Update last login
+    // Update last login - ✅ CHANGED: Use correct ID field
+    const userId = isAdmin ? user.adminUserID : user.userID;
     if (isAdmin) {
-      await AdminUser.updateLastLogin(user.id);
+      await AdminUser.updateLastLogin(userId);
     } else {
-      await User.updateLastLogin(user.id);
+      await User.updateLastLogin(userId);
     }
 
     // Generate token

@@ -89,6 +89,7 @@ exports.addPlayer = async (req, res) => {
     const jersey_number = toInt(req.body?.jersey_number);
     const position = safeTrim(req.body?.position);
     const age = toInt(req.body?.age);
+    const matchID = req.body?.matchID ? toInt(req.body.matchID) : null;  // ✅ ADDED: Optional matchID
 
     if (!name || jersey_number === null || !position || age === null) {
       return sendError(res, 400, 'All fields are required: name, jersey_number, position, age');
@@ -110,7 +111,7 @@ exports.addPlayer = async (req, res) => {
       return sendError(res, 400, `Player age must be between ${PLAYER_AGE_MIN} and ${PLAYER_AGE_MAX}`);
     }
 
-    const player = await Player.create({ name, jersey_number, position, age });
+    const player = await Player.create({ name, jersey_number, position, age, matchID });  // ✅ CHANGED: Added matchID
     return sendSuccess(res, 201, 'Player added successfully', player);
   } catch (error) {
     console.error('Add player error:', error);
@@ -128,7 +129,7 @@ exports.updatePlayerStats = async (req, res) => {
     if (!isValidId(id)) return sendError(res, 400, 'Invalid player id');
 
     // Check player exists
-    const existing = await Player.findById(id);
+    const existing = await Player.getById(id);  // ✅ Model now uses playerID internally
     if (!existing) return sendError(res, 404, 'Player not found');
 
     const goals = req.body?.goals !== undefined ? toInt(req.body.goals) : 0;
@@ -159,7 +160,7 @@ exports.deletePlayer = async (req, res) => {
     if (!isValidId(id)) return sendError(res, 400, 'Invalid player id');
 
     // Check player exists before attempting delete
-    const existing = await Player.findById(id);
+    const existing = await Player.getById(id);
     if (!existing) return sendError(res, 404, 'Player not found');
 
     await Player.delete(id);
@@ -263,15 +264,13 @@ exports.addMatch = async (req, res) => {
 };
 
 // PUT /api/admin/matches/:id/result
-// Sets scores and marks match as 'completed'.
-// Can be called on upcoming OR live matches (admin may backfill results).
 exports.updateMatchResult = async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid match id');
 
     // Verify match exists
-    const existing = await Match.findById(id);
+    const existing = await Match.getById(id);
     if (!existing) return sendError(res, 404, 'Match not found');
 
     // Cancelled matches cannot have results recorded
@@ -318,7 +317,7 @@ exports.deleteMatch = async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid match id');
 
-    const existing = await Match.findById(id);
+    const existing = await Match.getById(id);
     if (!existing) return sendError(res, 404, 'Match not found');
 
     await Match.delete(id);
@@ -345,6 +344,8 @@ exports.getAllNews = async (req, res) => {
 // POST /api/admin/news
 exports.addNews = async (req, res) => {
   try {
+    const adminUserID = req.user.id;  // ✅ ADDED: Get from authenticated admin
+
     const title = safeTrim(req.body?.title);
     const category = safeTrim(req.body?.category) || 'announcement';
     const excerpt = safeTrim(req.body?.excerpt);
@@ -375,7 +376,15 @@ exports.addNews = async (req, res) => {
           ? `${content.substring(0, 200)}...`
           : content;
 
-    const news = await News.create({ title, category, excerpt: safeExcerpt, content, author, published_date });
+    const news = await News.create({ 
+      adminUserID,  // ✅ ADDED
+      title, 
+      category, 
+      excerpt: safeExcerpt, 
+      content, 
+      author, 
+      published_date 
+    });
     return sendSuccess(res, 201, 'News article published successfully', news);
   } catch (error) {
     console.error('Add news error:', error);
@@ -389,7 +398,7 @@ exports.updateNews = async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid news id');
 
-    const existing = await News.findById(id);
+    const existing = await News.getById(id);  // ✅ Model now uses newsID internally
     if (!existing) return sendError(res, 404, 'News article not found');
 
     const title = req.body?.title !== undefined ? safeTrim(req.body.title) : undefined;
@@ -420,7 +429,7 @@ exports.deleteNews = async (req, res) => {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid news id');
 
-    const existing = await News.findById(id);
+    const existing = await News.getById(id);
     if (!existing) return sendError(res, 404, 'News article not found');
 
     await News.delete(id);
@@ -434,15 +443,6 @@ exports.deleteNews = async (req, res) => {
 // ================== BOOKING MANAGEMENT ==================
 
 // GET /api/admin/bookings
-// NOTE: Booking.getAll() MUST use a JOIN with the matches table to include
-// the opponent name. Expected row shape:
-//   { id, booking_reference, match_id, opponent, customer_name, customer_email,
-//     customer_phone, ticket_type, quantity, total_amount, payment_status,
-//     booking_date }
-// SQL pattern in Booking model:
-//   SELECT b.*, m.opponent FROM bookings b
-//   LEFT JOIN matches m ON b.match_id = m.id
-//   ORDER BY b.booking_date DESC
 exports.getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.getAll();
@@ -465,20 +465,6 @@ exports.getBookingStats = async (req, res) => {
 };
 
 // GET /api/admin/bookings/revenue-by-match
-// Returns ticket sales grouped by match. Used by the Revenue tab match sales table.
-// Expected row shape from Booking model:
-//   { match_id, opponent, vip_count, regular_count, student_count, total_amount }
-// SQL pattern in Booking model:
-//   SELECT b.match_id, m.opponent,
-//     SUM(CASE WHEN b.ticket_type = 'vip' THEN b.quantity ELSE 0 END) AS vip_count,
-//     SUM(CASE WHEN b.ticket_type = 'regular' THEN b.quantity ELSE 0 END) AS regular_count,
-//     SUM(CASE WHEN b.ticket_type = 'student' THEN b.quantity ELSE 0 END) AS student_count,
-//     SUM(b.total_amount) AS total_amount
-//   FROM bookings b
-//   LEFT JOIN matches m ON b.match_id = m.id
-//   WHERE b.payment_status = 'paid'
-//   GROUP BY b.match_id, m.opponent
-//   ORDER BY total_amount DESC
 exports.getRevenueByMatch = async (req, res) => {
   try {
     const revenue = await Booking.getRevenueByMatch();
@@ -492,14 +478,6 @@ exports.getRevenueByMatch = async (req, res) => {
 // ================== REVENUE MANAGEMENT ==================
 
 // GET /api/admin/revenue
-// Revenue.getSummary() must return:
-//   {
-//     total_amount: number,
-//     breakdown: [
-//       { source: 'tickets' | 'merchandise' | ..., total_amount: number }
-//     ]
-//   }
-// The frontend reads dashboardStats.revenue.breakdown to get per-source totals.
 exports.getRevenueSummary = async (req, res) => {
   try {
     const start_date = req.query?.start_date ? safeTrim(req.query.start_date) : undefined;
@@ -521,10 +499,9 @@ exports.getRevenueSummary = async (req, res) => {
 };
 
 // POST /api/admin/revenue
-// Body: { source, amount, description?, transaction_date? }
-// source must be one of: tickets, merchandise, membership, sponsorship, other
 exports.addRevenue = async (req, res) => {
   try {
+    const bookingID = req.body?.bookingID ? toInt(req.body.bookingID) : null;  // ✅ ADDED: Optional bookingID
     const source = safeTrim(req.body?.source);
     const amount = toFloat(req.body?.amount);
     const description = safeTrim(req.body?.description) || null;
@@ -550,7 +527,7 @@ exports.addRevenue = async (req, res) => {
       return sendError(res, 400, 'Invalid transaction_date. Use "YYYY-MM-DD"');
     }
 
-    const revenue = await Revenue.create({ source, amount, description, transaction_date });
+    const revenue = await Revenue.create({ bookingID, source, amount, description, transaction_date });  // ✅ CHANGED: Added bookingID
     return sendSuccess(res, 201, 'Revenue record added successfully', revenue);
   } catch (error) {
     console.error('Add revenue error:', error);
@@ -581,9 +558,6 @@ exports.getMonthlyRevenue = async (req, res) => {
 // ================== SETTINGS MANAGEMENT ==================
 
 // GET /api/admin/settings
-// Settings.getAll() must return a flat key-value object:
-//   { membership_fee: '50', ticket_price_vip: '20', ... }
-// The frontend reads: settingsData.data?.membership_fee
 exports.getAllSettings = async (req, res) => {
   try {
     const settings = await Settings.getAll();
@@ -595,7 +569,6 @@ exports.getAllSettings = async (req, res) => {
 };
 
 // GET /api/admin/settings/ticket-prices
-// Returns: { vip: number, regular: number, student: number }
 exports.getTicketPrices = async (req, res) => {
   try {
     const prices = await Settings.getTicketPrices();
@@ -607,9 +580,10 @@ exports.getTicketPrices = async (req, res) => {
 };
 
 // PUT /api/admin/settings/ticket-prices
-// Body: { vip: number, regular: number, student: number }
 exports.updateTicketPrices = async (req, res) => {
   try {
+    const adminUserID = req.user.id;  // ✅ ADDED: Get from authenticated admin
+
     const vip = toInt(req.body?.vip);
     const regular = toInt(req.body?.regular);
     const student = toInt(req.body?.student);
@@ -626,7 +600,7 @@ exports.updateTicketPrices = async (req, res) => {
       return sendError(res, 400, 'Ticket price is unrealistically large');
     }
 
-    await Settings.setTicketPrices({ vip, regular, student });
+    await Settings.setTicketPrices({ vip, regular, student }, adminUserID);  // ✅ CHANGED: Pass adminUserID
     return sendSuccess(res, 200, 'Ticket prices updated successfully', { vip, regular, student });
   } catch (error) {
     console.error('Update ticket prices error:', error);
@@ -635,9 +609,10 @@ exports.updateTicketPrices = async (req, res) => {
 };
 
 // PUT /api/admin/settings/membership-fee
-// Body: { fee: number }
 exports.updateMembershipFee = async (req, res) => {
   try {
+    const adminUserID = req.user.id;  // ✅ ADDED: Get from authenticated admin
+
     const fee = toInt(req.body?.fee);
 
     if (fee === null) {
@@ -652,7 +627,7 @@ exports.updateMembershipFee = async (req, res) => {
       return sendError(res, 400, 'Membership fee is unrealistically large');
     }
 
-    await Settings.setMembershipFee(fee);
+    await Settings.setMembershipFee(fee, adminUserID);  // ✅ CHANGED: Pass adminUserID
     return sendSuccess(res, 200, 'Membership fee updated successfully', { membership_fee: fee });
   } catch (error) {
     console.error('Update membership fee error:', error);
@@ -663,17 +638,6 @@ exports.updateMembershipFee = async (req, res) => {
 // ================== DASHBOARD STATS ==================
 
 // GET /api/admin/dashboard/stats
-// Aggregates all key data in a single request for the admin home screen.
-//
-// Response shape:
-// {
-//   players:      { total: number, list: Player[] }
-//   matches:      { upcoming: number, upcomingList: Match[], recentResults: Match[] }
-//   bookings:     BookingStats   (from Booking.getStats())
-//   revenue:      { total_amount: number, breakdown: [{ source, total_amount }] }
-//   ticketPrices: { vip, regular, student }
-//   topPerformers: Player[]
-// }
 exports.getDashboardStats = async (req, res) => {
   try {
     const [

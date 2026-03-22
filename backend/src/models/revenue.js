@@ -8,6 +8,11 @@ class Revenue {
     return String(value).trim();
   }
 
+  static _toInt(value, fallback = null) {  // ✅ ADDED: helper for IDs
+    const n = Number.parseInt(value, 10);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+
   static _toMoney(value) {
     const n = Number(value);
     if (!Number.isFinite(n)) return NaN;
@@ -63,7 +68,7 @@ class Revenue {
   // ---------- CRUD ----------
   static async getAll() {
     const [rows] = await db.query(
-      'SELECT * FROM revenue ORDER BY transaction_date DESC, id DESC'
+      'SELECT * FROM revenue ORDER BY transaction_date DESC, revenueID DESC'  // ✅ CHANGED: id → revenueID
     );
     return rows;
   }
@@ -71,7 +76,7 @@ class Revenue {
   static async getBySource(source) {
     const s = this._validateSource(source);
     const [rows] = await db.query(
-      'SELECT * FROM revenue WHERE source = ? ORDER BY transaction_date DESC, id DESC',
+      'SELECT * FROM revenue WHERE source = ? ORDER BY transaction_date DESC, revenueID DESC',  // ✅ CHANGED
       [s]
     );
     return rows;
@@ -88,7 +93,7 @@ class Revenue {
     const [rows] = await db.query(
       `SELECT * FROM revenue
        WHERE transaction_date BETWEEN ? AND ?
-       ORDER BY transaction_date DESC, id DESC`,
+       ORDER BY transaction_date DESC, revenueID DESC`,  // ✅ CHANGED
       [start, end]
     );
 
@@ -96,6 +101,7 @@ class Revenue {
   }
 
   static async create(revenueData) {
+    const bookingID = revenueData?.bookingID ? this._toInt(revenueData.bookingID) : null;  // ✅ ADDED: Optional bookingID
     const source = this._validateSource(revenueData?.source);
     const amount = this._toMoney(revenueData?.amount);
 
@@ -112,13 +118,14 @@ class Revenue {
 
     // transaction_date is DATE so we store 'YYYY-MM-DD'
     const [result] = await db.query(
-      `INSERT INTO revenue (source, amount, description, transaction_date)
-       VALUES (?, ?, ?, ?)`,
-      [source, amount, description, transaction_date]
+      `INSERT INTO revenue (bookingID, source, amount, description, transaction_date)
+       VALUES (?, ?, ?, ?, ?)`,  // ✅ CHANGED: Added bookingID
+      [bookingID, source, amount, description, transaction_date]
     );
 
     return {
-      id: result.insertId,
+      revenueID: result.insertId,  // ✅ CHANGED: id → revenueID
+      bookingID,  // ✅ ADDED
       source,
       amount,
       description,
@@ -126,9 +133,10 @@ class Revenue {
     };
   }
 
-  static async update(id, revenueData) {
-    const revenueId = this._validateId(id);
+  static async update(revenueID, revenueData) {  // ✅ CHANGED: parameter id → revenueID
+    const id = this._validateId(revenueID);  // ✅ CHANGED
 
+    const bookingID = revenueData?.bookingID !== undefined ? this._toInt(revenueData.bookingID) : undefined;  // ✅ ADDED
     const source = this._validateSource(revenueData?.source);
     const amount = this._toMoney(revenueData?.amount);
 
@@ -144,25 +152,34 @@ class Revenue {
       throw new Error('transaction_date must be a valid date (YYYY-MM-DD)');
     }
 
-    const [result] = await db.query(
-      `UPDATE revenue
-       SET source = ?, amount = ?, description = ?, transaction_date = ?
-       WHERE id = ?`,
-      [source, amount, description, transaction_date, revenueId]
-    );
+    // ✅ CHANGED: Handle optional bookingID update
+    let query, params;
+    if (bookingID !== undefined) {
+      query = `UPDATE revenue
+               SET bookingID = ?, source = ?, amount = ?, description = ?, transaction_date = ?
+               WHERE revenueID = ?`;
+      params = [bookingID, source, amount, description, transaction_date, id];
+    } else {
+      query = `UPDATE revenue
+               SET source = ?, amount = ?, description = ?, transaction_date = ?
+               WHERE revenueID = ?`;
+      params = [source, amount, description, transaction_date, id];
+    }
+
+    const [result] = await db.query(query, params);
 
     if (result.affectedRows === 0) {
       throw new Error('Revenue record not found');
     }
 
-    const [rows] = await db.query('SELECT * FROM revenue WHERE id = ?', [revenueId]);
+    const [rows] = await db.query('SELECT * FROM revenue WHERE revenueID = ?', [id]);  // ✅ CHANGED
     return rows[0] || null;
   }
 
-  static async delete(id) {
-    const revenueId = this._validateId(id);
+  static async delete(revenueID) {  // ✅ CHANGED: parameter id → revenueID
+    const id = this._validateId(revenueID);  // ✅ CHANGED
 
-    const [result] = await db.query('DELETE FROM revenue WHERE id = ?', [revenueId]);
+    const [result] = await db.query('DELETE FROM revenue WHERE revenueID = ?', [id]);  // ✅ CHANGED
 
     if (result.affectedRows === 0) {
       throw new Error('Revenue record not found');
