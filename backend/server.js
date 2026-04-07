@@ -1,6 +1,7 @@
 // backend/server.js
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -8,15 +9,37 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*', // Allow all origins for development
+  origin: process.env.CORS_ORIGIN || '*',
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Request logging middleware (useful for debugging)
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Cache-Control for public GET endpoints (improves mobile performance)
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path.startsWith('/api')) {
+    // Public endpoints: cache for 5 minutes
+    if (
+      req.path.startsWith('/api/news') ||
+      req.path.startsWith('/api/matches') ||
+      req.path.startsWith('/api/players') ||
+      req.path.startsWith('/api/settings') ||
+      req.path.startsWith('/api/gallery') ||
+      req.path.startsWith('/api/comments') ||
+      req.path.startsWith('/api/polls')
+    ) {
+      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+    }
+  }
   next();
 });
 
@@ -100,8 +123,7 @@ app.get('/api/docs', (req, res) => {
         'POST /api/auth/signup/user': 'Register new user',
         'POST /api/auth/signup/admin': 'Register new admin',
         'GET /api/auth/verify': 'Verify JWT token',
-        'GET /api/auth/profile': 'Get user profile',
-        'POST /api/auth/logout': 'Logout user'
+        'GET /api/auth/profile': 'Get user profile'
       },
       admin: {
         players: {

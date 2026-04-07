@@ -1,10 +1,11 @@
 // backend/src/middleware/auth.js
 const jwt = require('jsonwebtoken');
+const { isBlocklisted } = require('./tokenBlocklist');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // ================= AUTH MIDDLEWARE =================
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
   try {
     if (!JWT_SECRET) {
       console.error('JWT_SECRET is not configured.');
@@ -42,6 +43,14 @@ const auth = (req, res, next) => {
       });
     }
 
+    // ✅ Reject tokens that have been explicitly logged out
+    if (isBlocklisted(token)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has been invalidated. Please log in again.',
+      });
+    }
+
     // Attach decoded token to request
     req.user = decoded;
 
@@ -61,7 +70,7 @@ const auth = (req, res, next) => {
   }
 };
 
-// ================= ADMIN CHECK =================
+// ================= ADMIN CHECK (ANY ADMIN ROLE) =================
 const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -87,7 +96,47 @@ const isAdmin = (req, res, next) => {
   return next();
 };
 
-// ================= ROLE-BASED ACCESS =================
+// ================= SUPER ADMIN CHECK =================
+const isSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized.',
+    });
+  }
+
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Super admin privileges required.',
+    });
+  }
+
+  return next();
+};
+
+// ================= EDITOR CHECK (EDITOR OR HIGHER) =================
+const isEditor = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized.',
+    });
+  }
+
+  const editorRoles = ['super_admin', 'admin', 'editor'];
+
+  if (!editorRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Editor privileges required.',
+    });
+  }
+
+  return next();
+};
+
+// ================= ROLE-BASED ACCESS (SPECIFIC ROLES) =================
 const requireRole = (allowedRoles = []) => {
   return (req, res, next) => {
     if (!req.user || !req.user.role) {
@@ -97,10 +146,13 @@ const requireRole = (allowedRoles = []) => {
       });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    // Convert single role to array
+    const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: 'Insufficient permissions.',
+        message: `Access denied. Required role: ${roles.join(' or ')}.`,
       });
     }
 
@@ -108,6 +160,10 @@ const requireRole = (allowedRoles = []) => {
   };
 };
 
+// ================= EXPORTS =================
 module.exports = auth;
+module.exports.default = auth; // For default import compatibility
 module.exports.isAdmin = isAdmin;
+module.exports.isSuperAdmin = isSuperAdmin;
+module.exports.isEditor = isEditor;
 module.exports.requireRole = requireRole;

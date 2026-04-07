@@ -7,7 +7,16 @@ const Match = require('../models/Match');
 const News = require('../models/News');
 const Settings = require('../models/Settings');
 const Booking = require('../models/Booking');
+const Gallery = require('../models/Gallery');
+const db = require('../config/database');
 const auth = require('../middleware/auth');
+const { parsePagination, buildPaginatedResponse, sendPaginated } = require('../utils/pagination');
+
+const galleryController = require('../controllers/galleryController');
+const commentsController = require('../controllers/commentsController');
+const pollsController = require('../controllers/pollsController');
+const membershipsController = require('../controllers/membershipsController');
+const { bookingLimiter, commentLimiter, pollLimiter } = require('../middleware/rateLimiter');
 
 // ================== HELPERS ==================
 const sendError = (res, status, message, data = undefined) => {
@@ -93,9 +102,22 @@ router.get('/news/category/:category', async (req, res) => {
   }
 });
 
-// Get all published news
+// Get all published news (with pagination)
 router.get('/news', async (req, res) => {
   try {
+    // Check if pagination is requested
+    const usePagination = req.query.page || req.query.limit;
+
+    if (usePagination) {
+      const { page, limit, offset } = parsePagination(req.query, { maxLimit: 100 });
+      const [news, totalCount] = await Promise.all([
+        News.getAllPaginated(offset, limit),
+        News.getCount(),
+      ]);
+      return sendPaginated(res, 200, news, totalCount, page, limit);
+    }
+
+    // Fallback: return all (backward compatibility)
     const news = await News.getAll();
     return sendSuccess(res, 200, news);
   } catch (error) {
@@ -123,6 +145,21 @@ router.get('/news/:id', async (req, res) => {
   } catch (error) {
     console.error('Get news by ID error:', error);
     return sendError(res, 500, 'Failed to fetch news article');
+  }
+});
+
+// Search news
+router.get('/news/search', async (req, res) => {
+  try {
+    const q = safeTrim(req.query?.q);
+    if (!q || q.length < 2) {
+      return sendError(res, 400, 'Search query must be at least 2 characters', []);
+    }
+    const results = await News.search(q);
+    return sendSuccess(res, 200, results);
+  } catch (error) {
+    console.error('Search news error:', error);
+    return sendError(res, 500, 'Failed to search news', []);
   }
 });
 
@@ -177,9 +214,22 @@ router.get('/matches/completed', async (req, res) => {
   }
 });
 
-// Get all matches
+// Get all matches (with pagination)
 router.get('/matches', async (req, res) => {
   try {
+    // Check if pagination is requested
+    const usePagination = req.query.page || req.query.limit;
+
+    if (usePagination) {
+      const { page, limit, offset } = parsePagination(req.query, { maxLimit: 200 });
+      const [matches, totalCount] = await Promise.all([
+        Match.getAllPaginated(offset, limit),
+        Match.getCount(),
+      ]);
+      return sendPaginated(res, 200, matches, totalCount, page, limit);
+    }
+
+    // Fallback: return all (backward compatibility)
     const matches = await Match.getAll();
     return sendSuccess(res, 200, matches);
   } catch (error) {
@@ -248,9 +298,22 @@ router.get('/players/position/:position', async (req, res) => {
   }
 });
 
-// Get all players
+// Get all players (with pagination)
 router.get('/players', async (req, res) => {
   try {
+    // Check if pagination is requested
+    const usePagination = req.query.page || req.query.limit;
+
+    if (usePagination) {
+      const { page, limit, offset } = parsePagination(req.query, { maxLimit: 100 });
+      const [players, totalCount] = await Promise.all([
+        Player.getAllPaginated(offset, limit),
+        Player.getCount(),
+      ]);
+      return sendPaginated(res, 200, players, totalCount, page, limit);
+    }
+
+    // Fallback: return all (backward compatibility)
     const players = await Player.getAll();
     return sendSuccess(res, 200, players);
   } catch (error) {
@@ -305,24 +368,31 @@ router.get('/settings/club-info', async (req, res) => {
   }
 });
 
+// Get membership fee
+router.get('/settings/membership-fee', async (req, res) => {
+  try {
+    const fee = await Settings.getMembershipFee();
+    return sendSuccess(res, 200, { membership_fee: fee });
+  } catch (error) {
+    console.error('Get membership fee error:', error);
+    return sendError(res, 500, 'Failed to fetch membership fee', { membership_fee: 0 });
+  }
+});
+
 // ================== BOOKINGS ROUTES (Public) ==================
 
-// Create a booking (public) - ✅ NOW REQUIRES AUTHENTICATION
-router.post('/bookings', auth, async (req, res) => {  // ✅ ADDED: auth middleware
+// Create a booking (public) - Authentication optional (guest checkout supported)
+router.post('/bookings', bookingLimiter, async (req, res) => {
   try {
-    const matchID = toInt(req.body?.matchID || req.body?.match_id);  // ✅ CHANGED: support both
+    const matchID = toInt(req.body?.matchID || req.body?.match_id);
     const customer_name = safeTrim(req.body?.customer_name);
     const customer_email = safeTrim(req.body?.customer_email)?.toLowerCase();
     const customer_phone = safeTrim(req.body?.customer_phone);
     const ticket_type = safeTrim(req.body?.ticket_type);
     const quantity = toInt(req.body?.quantity);
 
-    // ✅ ADDED: Get userID from authenticated user
-    const userID = req.user?.id;  // From auth middleware
-
-    if (!userID) {
-      return sendError(res, 401, 'Authentication required to create booking');
-    }
+    // Get userID from authenticated user if available (optional)
+    const userID = req.user?.id || null;
 
     if (
       matchID === null ||
@@ -348,7 +418,7 @@ router.post('/bookings', auth, async (req, res) => {  // ✅ ADDED: auth middlew
     }
 
     // Ensure match exists
-    const match = await Match.getById(matchID);  // ✅ CHANGED: match_id → matchID
+    const match = await Match.getById(matchID);
     if (!match) {
       return sendError(res, 404, 'Match not found');
     }
@@ -364,8 +434,8 @@ router.post('/bookings', auth, async (req, res) => {  // ✅ ADDED: auth middlew
     const total_amount = unitPrice * quantity;
 
     const booking = await Booking.create({
-      matchID,  // ✅ CHANGED
-      userID,   // ✅ ADDED
+      matchID,
+      userID,       // Optional - null for guest bookings
       customer_name,
       customer_email,
       customer_phone,
@@ -373,6 +443,14 @@ router.post('/bookings', auth, async (req, res) => {  // ✅ ADDED: auth middlew
       quantity,
       total_amount,
     });
+
+    // Auto-create revenue record for ticket sales
+    const transaction_date = new Date().toISOString().slice(0, 10);
+    await db.query(
+      `INSERT INTO revenue (bookingID, source, amount, description, transaction_date)
+       VALUES (?, 'tickets', ?, ?, ?)`,
+      [booking.bookingID, total_amount, `Ticket sale: ${quantity}x ${ticket_type} for ${customer_name}`, transaction_date]
+    ).catch((e) => console.error('Auto-revenue creation failed (non-fatal):', e));
 
     return sendSuccess(res, 201, booking, 'Booking created successfully');
   } catch (error) {
@@ -402,5 +480,40 @@ router.get('/bookings', async (req, res) => {
     return sendError(res, 500, 'Failed to fetch bookings', []);
   }
 });
+
+// ================== GALLERY ROUTES (Public) ==================
+
+// Get all gallery items
+router.get('/gallery', galleryController.getAll);
+
+// Get gallery item by ID
+router.get('/gallery/:id', galleryController.getById);
+
+// Get gallery items by match
+router.get('/gallery/match/:matchID', galleryController.getByMatch);
+
+// ================== COMMENTS ROUTES (Public) ==================
+
+// Get all approved comments
+router.get('/comments', commentsController.getAll);
+
+// Post a new comment (auth optional — guest comments allowed)
+router.post('/comments', commentLimiter, commentsController.create);
+
+// ================== POLLS ROUTES (Public) ==================
+
+// Get active poll
+router.get('/polls/active', pollsController.getActivePoll);
+
+// Get poll results
+router.get('/polls/:id/results', pollsController.getPollResults);
+
+// Cast a vote
+router.post('/polls/:id/vote', pollLimiter, pollsController.vote);
+
+// ================== MEMBERSHIPS ROUTES (Public) ==================
+
+// Register a new membership
+router.post('/memberships', membershipsController.create);
 
 module.exports = router;

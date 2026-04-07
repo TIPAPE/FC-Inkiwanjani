@@ -91,6 +91,28 @@ class News {
     return rows;
   }
 
+  // Get paginated news
+  static async getAllPaginated(offset, limit) {
+    const [rows] = await db.query(
+      `SELECT n.*, a.full_name as admin_name, a.email as admin_email
+       FROM news n
+       JOIN admin_users a ON n.adminUserID = a.adminUserID
+       WHERE n.is_published = TRUE
+       ORDER BY n.published_date DESC, n.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    return rows;
+  }
+
+  // Get total count of published news
+  static async getCount() {
+    const [rows] = await db.query(
+      'SELECT COUNT(*) as total FROM news WHERE is_published = TRUE'
+    );
+    return rows[0]?.total || 0;
+  }
+
   static async getLatest(limit = 5) {
     const n = Number.parseInt(limit, 10);
     const safeLimit = Number.isFinite(n) && n > 0 ? Math.min(n, 50) : 5;

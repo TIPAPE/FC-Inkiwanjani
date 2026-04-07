@@ -5,8 +5,13 @@ const News = require('../models/News');
 const Booking = require('../models/Booking');
 const Revenue = require('../models/Revenue');
 const Settings = require('../models/Settings');
+const { parsePagination, sendPaginated } = require('../utils/pagination');
 
 // ================== HELPERS ==================
+
+/**
+ * Sends a standardized error response.
+ */
 const sendError = (res, status, message, extra = undefined) => {
   return res.status(status).json({
     success: false,
@@ -15,6 +20,9 @@ const sendError = (res, status, message, extra = undefined) => {
   });
 };
 
+/**
+ * Sends a standardized success response.
+ */
 const sendSuccess = (res, status, message, data) => {
   return res.status(status).json({
     success: true,
@@ -23,24 +31,38 @@ const sendSuccess = (res, status, message, data) => {
   });
 };
 
+/**
+ * Parses a value to a finite integer. Returns null if parsing fails.
+ */
 const toInt = (value) => {
   const n = Number.parseInt(String(value), 10);
   return Number.isFinite(n) ? n : null;
 };
 
+/**
+ * Parses a value to a finite float. Returns null if parsing fails.
+ */
 const toFloat = (value) => {
   const n = Number.parseFloat(String(value));
   return Number.isFinite(n) ? n : null;
 };
 
+/**
+ * Trims a string value. Returns the original value unchanged if not a string.
+ */
 const safeTrim = (v) => (typeof v === 'string' ? v.trim() : v);
 
+/**
+ * Returns true if the value parses to a positive integer.
+ */
 const isValidId = (id) => {
   const n = toInt(id);
   return n !== null && n > 0;
 };
 
-// Accepts: "YYYY-MM-DD HH:MM:SS" or ISO strings.
+/**
+ * Returns true for valid ISO date-time strings or "YYYY-MM-DD HH:MM:SS" format.
+ */
 const isValidDateTime = (v) => {
   if (typeof v !== 'string') return false;
   const s = v.trim();
@@ -50,6 +72,9 @@ const isValidDateTime = (v) => {
   return /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(s);
 };
 
+/**
+ * Returns true for valid "YYYY-MM-DD" date strings.
+ */
 const isValidDate = (v) => {
   if (typeof v !== 'string') return false;
   const s = v.trim();
@@ -59,19 +84,22 @@ const isValidDate = (v) => {
 };
 
 // Schema enums — must stay in sync with DB ENUM definitions
-const PLAYER_POSITIONS = new Set(['goalkeeper', 'defender', 'midfielder', 'forward']);
-const MATCH_VENUES = new Set(['home', 'away']);
+const PLAYER_POSITIONS  = new Set(['goalkeeper', 'defender', 'midfielder', 'forward']);
+const MATCH_VENUES      = new Set(['home', 'away']);
 const MATCH_COMPETITIONS = new Set(['league', 'cup', 'friendly']);
-const NEWS_CATEGORIES = new Set(['match-report', 'transfer', 'announcement', 'community']);
-const REVENUE_SOURCES = new Set(['tickets', 'merchandise', 'membership', 'sponsorship', 'other']);
+const NEWS_CATEGORIES   = new Set(['match-report', 'transfer', 'announcement', 'community']);
+const REVENUE_SOURCES   = new Set(['tickets', 'merchandise', 'membership', 'sponsorship', 'other']);
 
-// Age range — aligned with frontend validation
+// Player age constraints — aligned with frontend validation
 const PLAYER_AGE_MIN = 15;
 const PLAYER_AGE_MAX = 55;
 
 // ================== PLAYER MANAGEMENT ==================
 
-// GET /api/admin/players
+/**
+ * GET /api/admin/players
+ * Returns all players.
+ */
 exports.getAllPlayers = async (req, res) => {
   try {
     const players = await Player.getAll();
@@ -82,36 +110,35 @@ exports.getAllPlayers = async (req, res) => {
   }
 };
 
-// POST /api/admin/players
+/**
+ * POST /api/admin/players
+ * Creates a new player record. matchID is optional.
+ */
 exports.addPlayer = async (req, res) => {
   try {
-    const name = safeTrim(req.body?.name);
+    const name          = safeTrim(req.body?.name);
     const jersey_number = toInt(req.body?.jersey_number);
-    const position = safeTrim(req.body?.position);
-    const age = toInt(req.body?.age);
-    const matchID = req.body?.matchID ? toInt(req.body.matchID) : null;  // ✅ ADDED: Optional matchID
+    const position      = safeTrim(req.body?.position);
+    const age           = toInt(req.body?.age);
+    const matchID       = req.body?.matchID ? toInt(req.body.matchID) : null;
 
     if (!name || jersey_number === null || !position || age === null) {
       return sendError(res, 400, 'All fields are required: name, jersey_number, position, age');
     }
-
     if (name.length < 2 || name.length > 100) {
       return sendError(res, 400, 'Player name must be between 2 and 100 characters');
     }
-
     if (jersey_number < 1 || jersey_number > 99) {
       return sendError(res, 400, 'Jersey number must be between 1 and 99');
     }
-
     if (!PLAYER_POSITIONS.has(position)) {
       return sendError(res, 400, 'Invalid position', { allowed: Array.from(PLAYER_POSITIONS) });
     }
-
     if (age < PLAYER_AGE_MIN || age > PLAYER_AGE_MAX) {
       return sendError(res, 400, `Player age must be between ${PLAYER_AGE_MIN} and ${PLAYER_AGE_MAX}`);
     }
 
-    const player = await Player.create({ name, jersey_number, position, age, matchID });  // ✅ CHANGED: Added matchID
+    const player = await Player.create({ name, jersey_number, position, age, matchID });
     return sendSuccess(res, 201, 'Player added successfully', player);
   } catch (error) {
     console.error('Add player error:', error);
@@ -122,30 +149,32 @@ exports.addPlayer = async (req, res) => {
   }
 };
 
-// PUT /api/admin/players/:id/stats
+/**
+ * PUT /api/admin/players/:id/stats
+ * Updates statistical counters for a player. All stat fields default to 0 if omitted.
+ */
 exports.updatePlayerStats = async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid player id');
 
-    // Check player exists
-    const existing = await Player.getById(id);  // ✅ Model now uses playerID internally
+    const existing = await Player.getById(id);
     if (!existing) return sendError(res, 404, 'Player not found');
 
-    const goals = req.body?.goals !== undefined ? toInt(req.body.goals) : 0;
-    const assists = req.body?.assists !== undefined ? toInt(req.body.assists) : 0;
-    const appearances = req.body?.appearances !== undefined ? toInt(req.body.appearances) : 0;
+    const goals        = req.body?.goals        !== undefined ? toInt(req.body.goals)        : 0;
+    const assists      = req.body?.assists      !== undefined ? toInt(req.body.assists)      : 0;
+    const appearances  = req.body?.appearances  !== undefined ? toInt(req.body.appearances)  : 0;
     const yellow_cards = req.body?.yellow_cards !== undefined ? toInt(req.body.yellow_cards) : 0;
-    const red_cards = req.body?.red_cards !== undefined ? toInt(req.body.red_cards) : 0;
+    const red_cards    = req.body?.red_cards    !== undefined ? toInt(req.body.red_cards)    : 0;
 
-    const nums = { goals, assists, appearances, yellow_cards, red_cards };
-    for (const [k, v] of Object.entries(nums)) {
-      if (v === null) return sendError(res, 400, `Invalid number for ${k}`);
-      if (v < 0) return sendError(res, 400, `${k} cannot be negative`);
-      if (v > 9999) return sendError(res, 400, `${k} value is too large (max 9999)`);
+    const stats = { goals, assists, appearances, yellow_cards, red_cards };
+    for (const [key, value] of Object.entries(stats)) {
+      if (value === null)  return sendError(res, 400, `Invalid number for ${key}`);
+      if (value < 0)       return sendError(res, 400, `${key} cannot be negative`);
+      if (value > 9999)    return sendError(res, 400, `${key} value is too large (max 9999)`);
     }
 
-    const player = await Player.updateStats(id, { goals, assists, appearances, yellow_cards, red_cards });
+    const player = await Player.updateStats(id, stats);
     return sendSuccess(res, 200, 'Player stats updated successfully', player);
   } catch (error) {
     console.error('Update player stats error:', error);
@@ -153,13 +182,15 @@ exports.updatePlayerStats = async (req, res) => {
   }
 };
 
-// DELETE /api/admin/players/:id
+/**
+ * DELETE /api/admin/players/:id
+ * Permanently removes a player record.
+ */
 exports.deletePlayer = async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid player id');
 
-    // Check player exists before attempting delete
     const existing = await Player.getById(id);
     if (!existing) return sendError(res, 404, 'Player not found');
 
@@ -171,7 +202,10 @@ exports.deletePlayer = async (req, res) => {
   }
 };
 
-// GET /api/admin/players/top?limit=5
+/**
+ * GET /api/admin/players/top?limit=5
+ * Returns the top-scoring players up to the specified limit (1–50).
+ */
 exports.getTopPerformers = async (req, res) => {
   try {
     const limitRaw = req.query.limit;
@@ -189,7 +223,10 @@ exports.getTopPerformers = async (req, res) => {
 
 // ================== MATCH MANAGEMENT ==================
 
-// GET /api/admin/matches
+/**
+ * GET /api/admin/matches
+ * Returns all matches.
+ */
 exports.getAllMatches = async (req, res) => {
   try {
     const matches = await Match.getAll();
@@ -200,7 +237,10 @@ exports.getAllMatches = async (req, res) => {
   }
 };
 
-// GET /api/admin/matches/upcoming
+/**
+ * GET /api/admin/matches/upcoming
+ * Returns all scheduled upcoming matches.
+ */
 exports.getUpcomingMatches = async (req, res) => {
   try {
     const matches = await Match.getUpcoming();
@@ -211,7 +251,10 @@ exports.getUpcomingMatches = async (req, res) => {
   }
 };
 
-// GET /api/admin/matches/completed
+/**
+ * GET /api/admin/matches/completed
+ * Returns completed matches up to the specified limit (1–100, default 10).
+ */
 exports.getCompletedMatches = async (req, res) => {
   try {
     const limitRaw = req.query.limit;
@@ -227,30 +270,29 @@ exports.getCompletedMatches = async (req, res) => {
   }
 };
 
-// POST /api/admin/matches
+/**
+ * POST /api/admin/matches
+ * Creates a new match fixture.
+ */
 exports.addMatch = async (req, res) => {
   try {
-    const opponent = safeTrim(req.body?.opponent);
-    const match_date = safeTrim(req.body?.match_date);
-    const venue = safeTrim(req.body?.venue);
+    const opponent    = safeTrim(req.body?.opponent);
+    const match_date  = safeTrim(req.body?.match_date);
+    const venue       = safeTrim(req.body?.venue);
     const competition = safeTrim(req.body?.competition);
 
     if (!opponent || !match_date || !venue || !competition) {
       return sendError(res, 400, 'All fields are required: opponent, match_date, venue, competition');
     }
-
     if (opponent.length < 2 || opponent.length > 100) {
       return sendError(res, 400, 'Opponent name must be between 2 and 100 characters');
     }
-
     if (!isValidDateTime(match_date)) {
       return sendError(res, 400, 'Invalid match_date. Use format: YYYY-MM-DD HH:MM:SS');
     }
-
     if (!MATCH_VENUES.has(venue)) {
       return sendError(res, 400, 'Invalid venue', { allowed: Array.from(MATCH_VENUES) });
     }
-
     if (!MATCH_COMPETITIONS.has(competition)) {
       return sendError(res, 400, 'Invalid competition', { allowed: Array.from(MATCH_COMPETITIONS) });
     }
@@ -263,44 +305,43 @@ exports.addMatch = async (req, res) => {
   }
 };
 
-// PUT /api/admin/matches/:id/result
+/**
+ * PUT /api/admin/matches/:id/result
+ * Records the final result for a completed match.
+ * Cancelled matches are rejected — results cannot be recorded for them.
+ */
 exports.updateMatchResult = async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid match id');
 
-    // Verify match exists
     const existing = await Match.getById(id);
     if (!existing) return sendError(res, 404, 'Match not found');
 
-    // Cancelled matches cannot have results recorded
     if (existing.status === 'cancelled') {
       return sendError(res, 400, 'Cannot update result for a cancelled match');
     }
 
-    const home_score = toInt(req.body?.home_score);
-    const away_score = toInt(req.body?.away_score);
-    const summary = safeTrim(req.body?.summary) || null;
-    const attendanceRaw = req.body?.attendance;
-    const attendance = (attendanceRaw === null || attendanceRaw === undefined)
+    const home_score     = toInt(req.body?.home_score);
+    const away_score     = toInt(req.body?.away_score);
+    const summary        = safeTrim(req.body?.summary) || null;
+    const attendanceRaw  = req.body?.attendance;
+    const attendance     = (attendanceRaw === null || attendanceRaw === undefined)
       ? null
       : toInt(attendanceRaw);
 
     if (home_score === null || away_score === null) {
       return sendError(res, 400, 'Both home_score and away_score are required');
     }
-
     if (home_score < 0 || away_score < 0) {
       return sendError(res, 400, 'Scores cannot be negative');
     }
-
     if (home_score > 99 || away_score > 99) {
       return sendError(res, 400, 'Score value is unrealistic (max 99)');
     }
-
     if (attendance !== null) {
-      if (attendance < 0) return sendError(res, 400, 'Attendance cannot be negative');
-      if (attendance > 200000) return sendError(res, 400, 'Attendance value is too large');
+      if (attendance < 0)       return sendError(res, 400, 'Attendance cannot be negative');
+      if (attendance > 200000)  return sendError(res, 400, 'Attendance value is too large');
     }
 
     const match = await Match.updateResult(id, { home_score, away_score, summary, attendance });
@@ -311,7 +352,10 @@ exports.updateMatchResult = async (req, res) => {
   }
 };
 
-// DELETE /api/admin/matches/:id
+/**
+ * DELETE /api/admin/matches/:id
+ * Permanently removes a match record.
+ */
 exports.deleteMatch = async (req, res) => {
   try {
     const { id } = req.params;
@@ -330,7 +374,10 @@ exports.deleteMatch = async (req, res) => {
 
 // ================== NEWS MANAGEMENT ==================
 
-// GET /api/admin/news
+/**
+ * GET /api/admin/news
+ * Returns all news articles.
+ */
 exports.getAllNews = async (req, res) => {
   try {
     const news = await News.getAll();
@@ -341,49 +388,48 @@ exports.getAllNews = async (req, res) => {
   }
 };
 
-// POST /api/admin/news
+/**
+ * POST /api/admin/news
+ * Publishes a new news article. Excerpt is auto-generated from content if not provided.
+ * Author defaults to 'FC Inkiwanjani' if omitted.
+ */
 exports.addNews = async (req, res) => {
   try {
-    const adminUserID = req.user.id;  // ✅ ADDED: Get from authenticated admin
-
-    const title = safeTrim(req.body?.title);
-    const category = safeTrim(req.body?.category) || 'announcement';
-    const excerpt = safeTrim(req.body?.excerpt);
-    const content = safeTrim(req.body?.content);
-    const author = safeTrim(req.body?.author) || 'FC Inkiwanjani';
-    const published_date = safeTrim(req.body?.published_date) || new Date().toISOString().slice(0, 10);
+    const adminUserID     = req.user.id;
+    const title           = safeTrim(req.body?.title);
+    const category        = safeTrim(req.body?.category) || 'announcement';
+    const excerpt         = safeTrim(req.body?.excerpt);
+    const content         = safeTrim(req.body?.content);
+    const author          = safeTrim(req.body?.author) || 'FC Inkiwanjani';
+    const published_date  = safeTrim(req.body?.published_date) || new Date().toISOString().slice(0, 10);
 
     if (!title || !content) {
       return sendError(res, 400, 'Title and content are required');
     }
-
     if (title.length < 3 || title.length > 255) {
       return sendError(res, 400, 'Title must be between 3 and 255 characters');
     }
-
     if (!NEWS_CATEGORIES.has(category)) {
       return sendError(res, 400, 'Invalid category', { allowed: Array.from(NEWS_CATEGORIES) });
     }
-
     if (!isValidDate(published_date)) {
       return sendError(res, 400, 'Invalid published_date. Use "YYYY-MM-DD"');
     }
 
-    const safeExcerpt =
-      excerpt && excerpt.length > 0
-        ? excerpt
-        : content.length > 200
-          ? `${content.substring(0, 200)}...`
-          : content;
+    const safeExcerpt = excerpt && excerpt.length > 0
+      ? excerpt
+      : content.length > 200
+        ? `${content.substring(0, 200)}...`
+        : content;
 
-    const news = await News.create({ 
-      adminUserID,  // ✅ ADDED
-      title, 
-      category, 
-      excerpt: safeExcerpt, 
-      content, 
-      author, 
-      published_date 
+    const news = await News.create({
+      adminUserID,
+      title,
+      category,
+      excerpt: safeExcerpt,
+      content,
+      author,
+      published_date,
     });
     return sendSuccess(res, 201, 'News article published successfully', news);
   } catch (error) {
@@ -392,25 +438,27 @@ exports.addNews = async (req, res) => {
   }
 };
 
-// PUT /api/admin/news/:id
+/**
+ * PUT /api/admin/news/:id
+ * Partially updates a news article. Only fields present in the request body are changed.
+ */
 exports.updateNews = async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return sendError(res, 400, 'Invalid news id');
 
-    const existing = await News.getById(id);  // ✅ Model now uses newsID internally
+    const existing = await News.getById(id);
     if (!existing) return sendError(res, 404, 'News article not found');
 
-    const title = req.body?.title !== undefined ? safeTrim(req.body.title) : undefined;
+    const title    = req.body?.title    !== undefined ? safeTrim(req.body.title)    : undefined;
     const category = req.body?.category !== undefined ? safeTrim(req.body.category) : undefined;
-    const excerpt = req.body?.excerpt !== undefined ? safeTrim(req.body.excerpt) : undefined;
-    const content = req.body?.content !== undefined ? safeTrim(req.body.content) : undefined;
-    const author = req.body?.author !== undefined ? safeTrim(req.body.author) : undefined;
+    const excerpt  = req.body?.excerpt  !== undefined ? safeTrim(req.body.excerpt)  : undefined;
+    const content  = req.body?.content  !== undefined ? safeTrim(req.body.content)  : undefined;
+    const author   = req.body?.author   !== undefined ? safeTrim(req.body.author)   : undefined;
 
     if (category !== undefined && category !== '' && !NEWS_CATEGORIES.has(category)) {
       return sendError(res, 400, 'Invalid category', { allowed: Array.from(NEWS_CATEGORIES) });
     }
-
     if (title !== undefined && title !== '' && (title.length < 3 || title.length > 255)) {
       return sendError(res, 400, 'Title must be between 3 and 255 characters');
     }
@@ -423,7 +471,10 @@ exports.updateNews = async (req, res) => {
   }
 };
 
-// DELETE /api/admin/news/:id
+/**
+ * DELETE /api/admin/news/:id
+ * Permanently removes a news article.
+ */
 exports.deleteNews = async (req, res) => {
   try {
     const { id } = req.params;
@@ -442,7 +493,10 @@ exports.deleteNews = async (req, res) => {
 
 // ================== BOOKING MANAGEMENT ==================
 
-// GET /api/admin/bookings
+/**
+ * GET /api/admin/bookings
+ * Returns all booking records.
+ */
 exports.getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.getAll();
@@ -453,7 +507,10 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
-// GET /api/admin/bookings/stats
+/**
+ * GET /api/admin/bookings/stats
+ * Returns aggregated booking statistics.
+ */
 exports.getBookingStats = async (req, res) => {
   try {
     const stats = await Booking.getStats();
@@ -464,7 +521,10 @@ exports.getBookingStats = async (req, res) => {
   }
 };
 
-// GET /api/admin/bookings/revenue-by-match
+/**
+ * GET /api/admin/bookings/revenue-by-match
+ * Returns booking revenue grouped by match.
+ */
 exports.getRevenueByMatch = async (req, res) => {
   try {
     const revenue = await Booking.getRevenueByMatch();
@@ -477,11 +537,14 @@ exports.getRevenueByMatch = async (req, res) => {
 
 // ================== REVENUE MANAGEMENT ==================
 
-// GET /api/admin/revenue
+/**
+ * GET /api/admin/revenue
+ * Returns a revenue summary, optionally filtered by start_date and end_date (YYYY-MM-DD).
+ */
 exports.getRevenueSummary = async (req, res) => {
   try {
     const start_date = req.query?.start_date ? safeTrim(req.query.start_date) : undefined;
-    const end_date = req.query?.end_date ? safeTrim(req.query.end_date) : undefined;
+    const end_date   = req.query?.end_date   ? safeTrim(req.query.end_date)   : undefined;
 
     if (start_date && !isValidDate(start_date)) {
       return sendError(res, 400, 'Invalid start_date. Use "YYYY-MM-DD"');
@@ -498,36 +561,35 @@ exports.getRevenueSummary = async (req, res) => {
   }
 };
 
-// POST /api/admin/revenue
+/**
+ * POST /api/admin/revenue
+ * Records a new revenue transaction. bookingID is optional.
+ */
 exports.addRevenue = async (req, res) => {
   try {
-    const bookingID = req.body?.bookingID ? toInt(req.body.bookingID) : null;  // ✅ ADDED: Optional bookingID
-    const source = safeTrim(req.body?.source);
-    const amount = toFloat(req.body?.amount);
-    const description = safeTrim(req.body?.description) || null;
+    const bookingID       = req.body?.bookingID ? toInt(req.body.bookingID) : null;
+    const source          = safeTrim(req.body?.source);
+    const amount          = toFloat(req.body?.amount);
+    const description     = safeTrim(req.body?.description) || null;
     const transaction_date = safeTrim(req.body?.transaction_date) || new Date().toISOString().slice(0, 10);
 
     if (!source || amount === null) {
       return sendError(res, 400, 'Source and amount are required');
     }
-
     if (!REVENUE_SOURCES.has(source)) {
       return sendError(res, 400, 'Invalid source', { allowed: Array.from(REVENUE_SOURCES) });
     }
-
     if (amount <= 0) {
       return sendError(res, 400, 'Amount must be greater than 0');
     }
-
     if (amount > 100000000) {
       return sendError(res, 400, 'Amount is unrealistically large');
     }
-
     if (!isValidDate(transaction_date)) {
       return sendError(res, 400, 'Invalid transaction_date. Use "YYYY-MM-DD"');
     }
 
-    const revenue = await Revenue.create({ bookingID, source, amount, description, transaction_date });  // ✅ CHANGED: Added bookingID
+    const revenue = await Revenue.create({ bookingID, source, amount, description, transaction_date });
     return sendSuccess(res, 201, 'Revenue record added successfully', revenue);
   } catch (error) {
     console.error('Add revenue error:', error);
@@ -535,17 +597,20 @@ exports.addRevenue = async (req, res) => {
   }
 };
 
-// GET /api/admin/revenue/monthly?year=2025&month=11
+/**
+ * GET /api/admin/revenue/monthly?year=YYYY&month=M
+ * Returns revenue breakdown for a specific month.
+ */
 exports.getMonthlyRevenue = async (req, res) => {
   try {
-    const year = toInt(req.query?.year);
+    const year  = toInt(req.query?.year);
     const month = toInt(req.query?.month);
 
     if (year === null || month === null) {
       return sendError(res, 400, 'Year and month are required query parameters');
     }
-    if (year < 2000 || year > 2100) return sendError(res, 400, 'Year must be between 2000 and 2100');
-    if (month < 1 || month > 12) return sendError(res, 400, 'Month must be between 1 and 12');
+    if (year < 2000 || year > 2100)  return sendError(res, 400, 'Year must be between 2000 and 2100');
+    if (month < 1   || month > 12)   return sendError(res, 400, 'Month must be between 1 and 12');
 
     const revenue = await Revenue.getMonthlyRevenue(year, month);
     return sendSuccess(res, 200, null, revenue);
@@ -557,7 +622,10 @@ exports.getMonthlyRevenue = async (req, res) => {
 
 // ================== SETTINGS MANAGEMENT ==================
 
-// GET /api/admin/settings
+/**
+ * GET /api/admin/settings
+ * Returns all application settings.
+ */
 exports.getAllSettings = async (req, res) => {
   try {
     const settings = await Settings.getAll();
@@ -568,7 +636,10 @@ exports.getAllSettings = async (req, res) => {
   }
 };
 
-// GET /api/admin/settings/ticket-prices
+/**
+ * GET /api/admin/settings/ticket-prices
+ * Returns current ticket prices for all categories.
+ */
 exports.getTicketPrices = async (req, res) => {
   try {
     const prices = await Settings.getTicketPrices();
@@ -579,28 +650,28 @@ exports.getTicketPrices = async (req, res) => {
   }
 };
 
-// PUT /api/admin/settings/ticket-prices
+/**
+ * PUT /api/admin/settings/ticket-prices
+ * Updates ticket prices for all three tiers: vip, regular, student.
+ */
 exports.updateTicketPrices = async (req, res) => {
   try {
-    const adminUserID = req.user.id;  // ✅ ADDED: Get from authenticated admin
-
-    const vip = toInt(req.body?.vip);
+    const adminUserID = req.user.id;
+    const vip     = toInt(req.body?.vip);
     const regular = toInt(req.body?.regular);
     const student = toInt(req.body?.student);
 
     if (vip === null || regular === null || student === null) {
       return sendError(res, 400, 'All ticket prices are required: vip, regular, student');
     }
-
     if (vip < 0 || regular < 0 || student < 0) {
       return sendError(res, 400, 'Ticket prices cannot be negative');
     }
-
     if (vip > 1000000 || regular > 1000000 || student > 1000000) {
       return sendError(res, 400, 'Ticket price is unrealistically large');
     }
 
-    await Settings.setTicketPrices({ vip, regular, student }, adminUserID);  // ✅ CHANGED: Pass adminUserID
+    await Settings.setTicketPrices({ vip, regular, student }, adminUserID);
     return sendSuccess(res, 200, 'Ticket prices updated successfully', { vip, regular, student });
   } catch (error) {
     console.error('Update ticket prices error:', error);
@@ -608,26 +679,26 @@ exports.updateTicketPrices = async (req, res) => {
   }
 };
 
-// PUT /api/admin/settings/membership-fee
+/**
+ * PUT /api/admin/settings/membership-fee
+ * Updates the club membership fee.
+ */
 exports.updateMembershipFee = async (req, res) => {
   try {
-    const adminUserID = req.user.id;  // ✅ ADDED: Get from authenticated admin
-
+    const adminUserID = req.user.id;
     const fee = toInt(req.body?.fee);
 
     if (fee === null) {
       return sendError(res, 400, 'Membership fee is required');
     }
-
     if (fee <= 0) {
       return sendError(res, 400, 'Membership fee must be greater than 0');
     }
-
     if (fee > 1000000) {
       return sendError(res, 400, 'Membership fee is unrealistically large');
     }
 
-    await Settings.setMembershipFee(fee, adminUserID);  // ✅ CHANGED: Pass adminUserID
+    await Settings.setMembershipFee(fee, adminUserID);
     return sendSuccess(res, 200, 'Membership fee updated successfully', { membership_fee: fee });
   } catch (error) {
     console.error('Update membership fee error:', error);
@@ -637,7 +708,11 @@ exports.updateMembershipFee = async (req, res) => {
 
 // ================== DASHBOARD STATS ==================
 
-// GET /api/admin/dashboard/stats
+/**
+ * GET /api/admin/dashboard/stats
+ * Aggregates all dashboard data in a single parallel request.
+ * Returns players, matches, bookings, revenue, ticket prices, and top performers.
+ */
 exports.getDashboardStats = async (req, res) => {
   try {
     const [
@@ -676,5 +751,55 @@ exports.getDashboardStats = async (req, res) => {
   } catch (error) {
     console.error('Get dashboard stats error:', error);
     return sendError(res, 500, 'Failed to fetch dashboard statistics');
+  }
+};
+
+// ================== ADMIN MANAGEMENT (super_admin only) ==================
+
+/**
+ * GET /api/admin/admins
+ * Returns all admin accounts (safe fields only).
+ */
+exports.getAllAdmins = async (req, res) => {
+  try {
+    const AdminUser = require('../models/AdminUser');
+    const admins = await AdminUser.findAll();
+    return sendSuccess(res, 200, null, admins);
+  } catch (error) {
+    console.error('Get admins error:', error);
+    return sendError(res, 500, 'Failed to fetch admin accounts');
+  }
+};
+
+/**
+ * POST /api/admin/admins
+ * Creates a new admin account. Super_admin only.
+ */
+exports.createAdmin = async (req, res) => {
+  try {
+    const AdminUser = require('../models/AdminUser');
+    const { username, email, password, full_name, role } = req.body;
+    const admin = await AdminUser.create({ username, email, password, full_name, role });
+    return sendSuccess(res, 201, 'Admin account created successfully', admin);
+  } catch (error) {
+    console.error('Create admin error:', error);
+    return sendError(res, 400, error.message || 'Failed to create admin account');
+  }
+};
+
+/**
+ * DELETE /api/admin/admins/:id
+ * Soft-deletes (deactivates) an admin account. Cannot delete super_admin.
+ */
+exports.deleteAdmin = async (req, res) => {
+  try {
+    const AdminUser = require('../models/AdminUser');
+    const { id } = req.params;
+    if (!id || isNaN(Number(id))) return sendError(res, 400, 'Invalid admin ID');
+    await AdminUser.deactivate(Number(id));
+    return sendSuccess(res, 200, 'Admin account deleted successfully');
+  } catch (error) {
+    console.error('Delete admin error:', error);
+    return sendError(res, 400, error.message || 'Failed to delete admin account');
   }
 };

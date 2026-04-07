@@ -30,6 +30,21 @@ class Match {
     return rows;
   }
 
+  // Get paginated matches
+  static async getAllPaginated(offset, limit) {
+    const [rows] = await db.query(
+      'SELECT * FROM matches ORDER BY match_date DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+    return rows;
+  }
+
+  // Get total count of matches
+  static async getCount() {
+    const [rows] = await db.query('SELECT COUNT(*) as total FROM matches');
+    return rows[0]?.total || 0;
+  }
+
   // Get match by ID
   static async getById(matchID) {  // ✅ CHANGED: parameter id → matchID
     const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID

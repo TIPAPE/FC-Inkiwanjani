@@ -60,6 +60,26 @@ class Booking {
     return rows;
   }
 
+  // Get paginated bookings
+  static async getAllPaginated(offset, limit) {
+    const [rows] = await db.query(
+      `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
+       FROM bookings b
+       JOIN matches m ON b.matchID = m.matchID
+       JOIN users u ON b.userID = u.userID
+       ORDER BY b.booking_date DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    return rows;
+  }
+
+  // Get total count of bookings
+  static async getCount() {
+    const [rows] = await db.query('SELECT COUNT(*) as total FROM bookings');
+    return rows[0]?.total || 0;
+  }
+
   // Get booking by ID
   static async getById(bookingID) {  // ✅ CHANGED: parameter id → bookingID
     const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
@@ -143,8 +163,8 @@ class Booking {
 
   // Create booking
   static async create(bookingData) {
-    const matchID = this._toInt(bookingData?.matchID || bookingData?.match_id, null);  // ✅ CHANGED: support both for backward compatibility
-    const userID = this._toInt(bookingData?.userID, null);  // ✅ ADDED: required userID
+    const matchID = this._toInt(bookingData?.matchID || bookingData?.match_id, null);
+    const userID = bookingData?.userID ? this._toInt(bookingData.userID, null) : null;  // userID is optional
     const customer_name = this._toString(bookingData?.customer_name);
     const customer_email = this._normalizeEmail(bookingData?.customer_email);
     const customer_phone = this._toString(bookingData?.customer_phone);
@@ -156,7 +176,6 @@ class Booking {
 
     if (
       !matchID ||
-      !userID ||  // ✅ ADDED: userID is required
       !customer_name ||
       !customer_email ||
       !customer_phone ||
@@ -181,10 +200,12 @@ class Booking {
       throw new Error('Match not found');
     }
 
-    // ✅ ADDED: Ensure user exists
-    const userExists = await this._userExists(userID);
-    if (!userExists) {
-      throw new Error('User not found');
+    // userID is optional - if provided, ensure user exists
+    if (userID !== null) {
+      const userExists = await this._userExists(userID);
+      if (!userExists) {
+        throw new Error('User not found');
+      }
     }
 
     // Money validation
@@ -211,10 +232,10 @@ class Booking {
           `INSERT INTO bookings
            (matchID, userID, customer_name, customer_email, customer_phone,
             ticket_type, quantity, total_amount, booking_reference, payment_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,  // ✅ CHANGED: match_id → matchID, added userID
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
-            matchID,  // ✅ CHANGED
-            userID,   // ✅ ADDED
+            matchID,
+            userID,
             customer_name,
             customer_email,
             customer_phone,
@@ -227,9 +248,9 @@ class Booking {
         );
 
         return {
-          bookingID: result.insertId,  // ✅ CHANGED: id → bookingID
-          matchID,  // ✅ CHANGED
-          userID,   // ✅ ADDED
+          bookingID: result.insertId,
+          matchID,
+          userID,
           customer_name,
           customer_email,
           customer_phone,

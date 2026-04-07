@@ -19,6 +19,23 @@ class Player {
     return rows;
   }
 
+  // Get paginated list of active players
+  static async getAllPaginated(offset, limit) {
+    const [rows] = await db.query(
+      'SELECT * FROM players WHERE is_active = TRUE ORDER BY jersey_number ASC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+    return rows;
+  }
+
+  // Get total count of active players
+  static async getCount() {
+    const [rows] = await db.query(
+      'SELECT COUNT(*) as total FROM players WHERE is_active = TRUE'
+    );
+    return rows[0]?.total || 0;
+  }
+
   // Get player by ID (active only)
   static async getById(playerID) {  // ✅ CHANGED: parameter id → playerID
     const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
