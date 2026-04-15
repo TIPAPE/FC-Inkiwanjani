@@ -1,10 +1,9 @@
-// backend/src/middleware/auth.js
+// Auth middleware
 const jwt = require('jsonwebtoken');
 const { isBlocklisted } = require('./tokenBlocklist');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ================= AUTH MIDDLEWARE =================
 const auth = async (req, res, next) => {
   try {
     if (!JWT_SECRET) {
@@ -43,7 +42,7 @@ const auth = async (req, res, next) => {
       });
     }
 
-    // ✅ Reject tokens that have been explicitly logged out
+    // Reject blocklisted tokens
     if (isBlocklisted(token)) {
       return res.status(401).json({
         success: false,
@@ -70,7 +69,7 @@ const auth = async (req, res, next) => {
   }
 };
 
-// ================= ADMIN CHECK (ANY ADMIN ROLE) =================
+// Admin check
 const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -96,7 +95,7 @@ const isAdmin = (req, res, next) => {
   return next();
 };
 
-// ================= SUPER ADMIN CHECK =================
+// Super admin check
 const isSuperAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -115,7 +114,7 @@ const isSuperAdmin = (req, res, next) => {
   return next();
 };
 
-// ================= EDITOR CHECK (EDITOR OR HIGHER) =================
+// Editor check
 const isEditor = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -136,7 +135,7 @@ const isEditor = (req, res, next) => {
   return next();
 };
 
-// ================= ROLE-BASED ACCESS (SPECIFIC ROLES) =================
+// Role-based access
 const requireRole = (allowedRoles = []) => {
   return (req, res, next) => {
     if (!req.user || !req.user.role) {
@@ -146,7 +145,7 @@ const requireRole = (allowedRoles = []) => {
       });
     }
 
-    // Convert single role to array
+    // Normalize to array
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
     if (!roles.includes(req.user.role)) {
@@ -160,9 +159,8 @@ const requireRole = (allowedRoles = []) => {
   };
 };
 
-// ================= EXPORTS =================
 module.exports = auth;
-module.exports.default = auth; // For default import compatibility
+module.exports.default = auth;
 module.exports.isAdmin = isAdmin;
 module.exports.isSuperAdmin = isSuperAdmin;
 module.exports.isEditor = isEditor;

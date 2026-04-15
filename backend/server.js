@@ -12,22 +12,34 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true
 }));
-app.use(express.json());
+
+// Custom JSON parsing middleware that handles errors gracefully
+app.use((req, res, next) => {
+  express.json()(req, res, (err) => {
+    if (err) {
+      // Log the error but don't break the request
+      console.warn('JSON parsing error (ignored):', err.message);
+      // Clear the body and continue
+      req.body = {};
+    }
+    next();
+  });
+});
+
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Request logging middleware (useful for debugging)
+// Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Cache-Control for public GET endpoints (improves mobile performance)
+// Cache-Control for public GET endpoints
 app.use((req, res, next) => {
   if (req.method === 'GET' && req.path.startsWith('/api')) {
-    // Public endpoints: cache for 5 minutes
     if (
       req.path.startsWith('/api/news') ||
       req.path.startsWith('/api/matches') ||
@@ -37,7 +49,7 @@ app.use((req, res, next) => {
       req.path.startsWith('/api/comments') ||
       req.path.startsWith('/api/polls')
     ) {
-      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes
+      res.set('Cache-Control', 'public, max-age=300');
     }
   }
   next();
@@ -46,19 +58,14 @@ app.use((req, res, next) => {
 // Test database connection
 require('./src/config/database');
 
-// Import Routes
+// Import routes
 const authRoutes = require('./src/routes/authRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const publicRoutes = require('./src/routes/publicRoutes');
 
 // API Routes
-// Public routes (no authentication required)
 app.use('/api', publicRoutes);
-
-// Auth routes (login, signup, token verification)
 app.use('/api/auth', authRoutes);
-
-// Admin routes (authentication + admin role required)
 app.use('/api/admin', adminRoutes);
 
 // Root endpoint
@@ -178,16 +185,15 @@ app.get('/api/docs', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('❌ Error:', err.stack);
-  
-  // Handle different types of errors
+  console.error('Error:', err.stack);
+
   if (err.name === 'UnauthorizedError') {
     return res.status(401).json({
       success: false,
       message: 'Invalid or expired token'
     });
   }
-  
+
   if (err.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -195,8 +201,7 @@ app.use((err, req, res, next) => {
       errors: err.errors
     });
   }
-  
-  // Default error
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Something went wrong!',
@@ -204,7 +209,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler (must be last)
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -221,38 +226,25 @@ app.use((req, res) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log('\n🚀 ========================================');
-  console.log('   FC INKIWANJANI API SERVER');
-  console.log('   ========================================');
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Server running on: http://localhost:${PORT}`);
-  console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
-  console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
-  console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
-  console.log('\n📋 Available Routes:');
-  console.log('   - Public Routes: /api/news, /api/matches, /api/players');
-  console.log('   - Auth Routes: /api/auth/login, /api/auth/signup');
-  console.log('   - Admin Routes: /api/admin/* (requires authentication)');
-  console.log('========================================\n');
+  console.log(`\nFC INKIWANJANI API Server - ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Server: http://localhost:${PORT}`);
+  console.log(`API: http://localhost:${PORT}/api`);
+  console.log(`Docs: http://localhost:${PORT}/api/docs\n`);
 });
 
-// Handle graceful shutdown
+// Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('✅ HTTP server closed');
-    process.exit(0);
-  });
+  console.log('SIGTERM received: closing server');
+  server.close(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
-  console.log('\n👋 SIGINT signal received: closing HTTP server');
+  console.log('SIGINT received: closing server');
   process.exit(0);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Unhandled Rejection:', promise, 'reason:', reason);
 });
 
 module.exports = app;

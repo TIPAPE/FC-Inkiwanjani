@@ -10,10 +10,7 @@ const sendSuccess = (res, status, data, message) =>
 const toInt = (v) => { const n = Number.parseInt(v, 10); return Number.isFinite(n) ? n : null; };
 const safeTrim = (v) => (typeof v === 'string' ? v.trim() : v);
 
-/**
- * GET /api/comments
- * Returns all approved comments ordered by creation date descending.
- */
+// Get all approved comments
 exports.getAll = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -29,10 +26,7 @@ exports.getAll = async (req, res) => {
   }
 };
 
-/**
- * POST /api/comments
- * Creates a new comment (requires authentication).
- */
+// Create comment
 exports.create = async (req, res) => {
   try {
     const userID = req.user?.id || null;
@@ -49,7 +43,7 @@ exports.create = async (req, res) => {
       return sendError(res, 400, 'Comment must be between 1 and 2000 characters');
     }
 
-    // If user is authenticated, link comment to their account
+    // Link to authenticated user if applicable
     let finalUserID = userID;
     let finalName = commenter_name;
 
@@ -85,9 +79,7 @@ exports.create = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/comments/:id (admin only - for moderation)
- */
+// Delete comment (admin)
 exports.deleteComment = async (req, res) => {
   try {
     const id = toInt(req.params.id);
@@ -103,10 +95,7 @@ exports.deleteComment = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/admin/comments/:id/approve
- * Toggles the approval status of a comment.
- */
+// Toggle comment approval
 exports.toggleApproval = async (req, res) => {
   try {
     const id = toInt(req.params.id);
@@ -125,10 +114,7 @@ exports.toggleApproval = async (req, res) => {
   }
 };
 
-/**
- * GET /api/admin/comments
- * Returns all comments (approved and unapproved) for moderation.
- */
+// Get all comments (admin)
 exports.getAllAdmin = async (req, res) => {
   try {
     const [rows] = await db.query(

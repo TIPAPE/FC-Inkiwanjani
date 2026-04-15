@@ -13,20 +13,14 @@ const VALIDATION = {
   fullName: { min: 2, max: 100 },
 };
 
-/**
- * Removes the password_hash field from a database row before returning it to callers.
- * findByEmail and findByUsername intentionally bypass this for login verification.
- */
+// Removes the password_hash field from a database row before returning
 const stripHash = (row) => {
   if (!row) return null;
   const { password_hash, ...safe } = row;
   return safe;
 };
 
-/**
- * Validates and sanitizes all fields required for admin creation.
- * Throws a descriptive error on the first failing constraint.
- */
+// Validates and sanitizes all fields required for admin creation
 const validateCreate = ({ username, email, password, full_name }) => {
   const u = (username || '').trim();
   const e = (email || '').trim().toLowerCase();
@@ -57,10 +51,7 @@ const validateCreate = ({ username, email, password, full_name }) => {
 
 class AdminUser {
 
-  /**
-   * Creates a new admin user record after validating all inputs.
-   * Returns a safe user object without the password hash.
-   */
+  // Create a new admin user
   static async create({ username, email, password, full_name, role } = {}) {
     const clean = validateCreate({ username, email, password, full_name });
 
@@ -95,11 +86,7 @@ class AdminUser {
     }
   }
 
-  /**
-   * Finds an active admin by email.
-   * Returns the full row including password_hash — for login use only.
-   * Never forward this result directly to the client.
-   */
+  // Find an active admin by email (includes password_hash for login)
   static async findByEmail(email) {
     if (!email) return null;
     const [rows] = await pool.execute(
@@ -109,11 +96,7 @@ class AdminUser {
     return rows[0] || null;
   }
 
-  /**
-   * Finds an active admin by username.
-   * Returns the full row including password_hash — for login use only.
-   * Never forward this result directly to the client.
-   */
+  // Find an active admin by username (includes password_hash for login)
   static async findByUsername(username) {
     if (!username) return null;
     const [rows] = await pool.execute(
@@ -123,11 +106,7 @@ class AdminUser {
     return rows[0] || null;
   }
 
-  /**
-   * Finds an active admin by primary key.
-   * Returns only safe public fields — password_hash is excluded at the query level.
-   * Auth middleware should treat a null return as a 401.
-   */
+  // Find an active admin by ID (excludes password_hash)
   static async findById(adminUserID) {
     if (!adminUserID) return null;
     const [rows] = await pool.execute(
@@ -140,10 +119,7 @@ class AdminUser {
     return rows[0] || null;
   }
 
-  /**
-   * Returns all active admins with safe fields only.
-   * Intended for super_admin user management views.
-   */
+  // Get all active admins (for super_admin management)
   static async findAll() {
     const [rows] = await pool.execute(
       `SELECT adminUserID, username, email, full_name, role, last_login, created_at
@@ -154,18 +130,13 @@ class AdminUser {
     return rows;
   }
 
-  /**
-   * Compares a plain-text password against the stored bcrypt hash.
-   * Returns false if either argument is missing.
-   */
+  // Compare plain-text password against stored hash
   static async verifyPassword(plainPassword, hashedPassword) {
     if (!plainPassword || !hashedPassword) return false;
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  /**
-   * Records the current timestamp as last_login after a successful authentication.
-   */
+  // Update last_login timestamp
   static async updateLastLogin(adminUserID) {
     if (!adminUserID) return false;
     await pool.execute(
@@ -175,11 +146,7 @@ class AdminUser {
     return true;
   }
 
-  /**
-   * Updates full_name and/or role for an admin.
-   * Rejects unknown role values to prevent silent data corruption.
-   * Returns the updated record via findById.
-   */
+  // Update admin profile (full_name and/or role)
   static async updateProfile(adminUserID, { full_name, role } = {}) {
     if (!adminUserID) throw new Error('adminUserID is required');
 
@@ -209,11 +176,7 @@ class AdminUser {
     return this.findById(adminUserID);
   }
 
-  /**
-   * Changes an admin's password after verifying the current one.
-   * Rejects reuse of the existing password.
-   * Fetches the raw row directly to access password_hash without going through findById.
-   */
+  // Change admin password after verifying current one
   static async changePassword(adminUserID, { current_password, new_password } = {}) {
     if (!adminUserID) throw new Error('adminUserID is required');
     if (!current_password || !new_password) {
@@ -250,10 +213,7 @@ class AdminUser {
     return true;
   }
 
-  /**
-   * Soft-deletes an admin by setting is_active = FALSE.
-   * Prevents deactivation of the last active super_admin to avoid a system lockout.
-   */
+  // Soft-delete an admin; prevents deactivation of last super_admin
   static async deactivate(adminUserID) {
     if (!adminUserID) throw new Error('adminUserID is required');
 
@@ -272,24 +232,6 @@ class AdminUser {
       }
     }
 
-    await pool.execute(
-      'UPDATE admin_users SET is_active = FALSE WHERE adminUserID = ?',
-      [adminUserID]
-    );
-    return true;
-  }
-
-  /**
-   * Soft-deletes an admin by setting is_active to FALSE.
-   * Prevents deleting super_admin accounts.
-   */
-  static async deactivate(adminUserID) {
-    if (!adminUserID) throw new Error('adminUserID is required');
-    const existing = await this.findById(adminUserID);
-    if (!existing) throw new Error('Admin user not found');
-    if (existing.role === 'super_admin') {
-      throw new Error('Cannot delete a super_admin account');
-    }
     await pool.execute(
       'UPDATE admin_users SET is_active = FALSE WHERE adminUserID = ?',
       [adminUserID]

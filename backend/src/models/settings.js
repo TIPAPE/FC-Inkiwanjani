@@ -27,7 +27,7 @@ class Settings {
     return [...new Set(cleaned)];
   }
 
-  // ✅ ADDED: Validate admin user exists
+  // Validate admin user exists
   static async _adminExists(adminUserID) {
     const [rows] = await db.query(
       'SELECT adminUserID FROM admin_users WHERE adminUserID = ? AND is_active = TRUE LIMIT 1',
@@ -39,7 +39,7 @@ class Settings {
   // ---------- core ----------
   static async getAll() {
     const [rows] = await db.query(
-      'SELECT setting_key, setting_value FROM settings'  // ✅ No change needed - fetching key-value pairs
+      'SELECT setting_key, setting_value FROM settings'
     );
 
     const settings = {};
@@ -77,8 +77,8 @@ class Settings {
     return settings;
   }
 
-  // Set or update setting (single) - ✅ REQUIRES adminUserID
-  static async set(key, value, adminUserID) {  // ✅ CHANGED: Added adminUserID parameter
+  // Set or update a single setting - requires adminUserID
+  static async set(key, value, adminUserID) {
     const k = this._ensureKey(key);
     const v = this._toString(value);
     const aID = this._toInt(adminUserID, null);
@@ -87,7 +87,6 @@ class Settings {
       throw new Error('adminUserID is required');
     }
 
-    // ✅ ADDED: Validate admin exists
     const adminExists = await this._adminExists(aID);
     if (!adminExists) {
       throw new Error('Admin user not found');
@@ -96,15 +95,15 @@ class Settings {
     await db.query(
       `INSERT INTO settings (adminUserID, setting_key, setting_value)
        VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), adminUserID = VALUES(adminUserID)`,  // ✅ CHANGED: Added adminUserID
+       ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), adminUserID = VALUES(adminUserID)`,
       [aID, k, v]
     );
 
     return { key: k, value: v };
   }
 
-  // Update multiple settings atomically - ✅ REQUIRES adminUserID
-  static async setMultiple(settings, adminUserID) {  // ✅ CHANGED: Added adminUserID parameter
+  // Update multiple settings atomically - requires adminUserID
+  static async setMultiple(settings, adminUserID) {
     if (!settings || typeof settings !== 'object') {
       throw new Error('Settings object is required');
     }
@@ -114,7 +113,6 @@ class Settings {
       throw new Error('adminUserID is required');
     }
 
-    // ✅ ADDED: Validate admin exists
     const adminExists = await this._adminExists(aID);
     if (!adminExists) {
       throw new Error('Admin user not found');
@@ -133,7 +131,7 @@ class Settings {
         await connection.query(
           `INSERT INTO settings (adminUserID, setting_key, setting_value)
            VALUES (?, ?, ?)
-           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), adminUserID = VALUES(adminUserID)`,  // ✅ CHANGED
+           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), adminUserID = VALUES(adminUserID)`,
           [aID, k, v]
         );
       }
@@ -153,11 +151,11 @@ class Settings {
     }
   }
 
-  static async delete(settingID) {  // ✅ CHANGED: parameter key → settingID (but still uses key in query)
-    const k = this._ensureKey(settingID);  // Note: This is actually the key string, not settingID number
+  static async delete(settingKey) {
+    const k = this._ensureKey(settingKey);
 
     const [result] = await db.query(
-      'DELETE FROM settings WHERE setting_key = ?',  // ✅ Still uses setting_key for deletion
+      'DELETE FROM settings WHERE setting_key = ?',
       [k]
     );
 
@@ -180,7 +178,7 @@ class Settings {
     };
   }
 
-  static async setTicketPrices(prices, adminUserID) {  // ✅ CHANGED: Added adminUserID parameter
+  static async setTicketPrices(prices, adminUserID) {
     if (!prices || typeof prices !== 'object') {
       throw new Error('Ticket prices are required');
     }
@@ -197,7 +195,7 @@ class Settings {
       ticket_price_vip: String(vip),
       ticket_price_regular: String(regular),
       ticket_price_student: String(student),
-    }, adminUserID);  // ✅ CHANGED: Pass adminUserID
+    }, adminUserID);
   }
 
   static async getClubInfo() {
@@ -212,14 +210,13 @@ class Settings {
     return this.getByKeys(keys);
   }
 
-  static async setClubInfo(info, adminUserID) {  // ✅ CHANGED: Added adminUserID parameter
+  static async setClubInfo(info, adminUserID) {
     if (!info || typeof info !== 'object') {
       throw new Error('Club info object is required');
     }
 
     const settings = {};
 
-    // allow both "club_*" keys and friendly keys from UI
     if (info.club_name || info.name) settings.club_name = this._toString(info.club_name ?? info.name);
     if (info.club_slogan || info.slogan) settings.club_slogan = this._toString(info.club_slogan ?? info.slogan);
     if (info.club_nickname || info.nickname) settings.club_nickname = this._toString(info.club_nickname ?? info.nickname);
@@ -231,7 +228,7 @@ class Settings {
       throw new Error('No valid club info fields provided');
     }
 
-    return this.setMultiple(settings, adminUserID);  // ✅ CHANGED: Pass adminUserID
+    return this.setMultiple(settings, adminUserID);
   }
 
   static async getMembershipFee() {
@@ -239,12 +236,12 @@ class Settings {
     return this._toInt(value, 0);
   }
 
-  static async setMembershipFee(fee, adminUserID) {  // ✅ CHANGED: Added adminUserID parameter
+  static async setMembershipFee(fee, adminUserID) {
     const n = this._toInt(fee, NaN);
     if (!Number.isFinite(n) || n < 0) {
       throw new Error('Invalid membership fee');
     }
-    return this.set('membership_fee', String(n), adminUserID);  // ✅ CHANGED: Pass adminUserID
+    return this.set('membership_fee', String(n), adminUserID);
   }
 }
 

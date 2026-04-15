@@ -37,12 +37,12 @@ class Player {
   }
 
   // Get player by ID (active only)
-  static async getById(playerID) {  // ✅ CHANGED: parameter id → playerID
-    const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+  static async getById(playerID) {
+    const id = this._toInt(playerID, null);
     if (!id) return null;
 
     const [rows] = await db.query(
-      'SELECT * FROM players WHERE playerID = ? AND is_active = TRUE',  // ✅ CHANGED
+      'SELECT * FROM players WHERE playerID = ? AND is_active = TRUE',
       [id]
     );
     return rows[0] || null;
@@ -55,7 +55,7 @@ class Player {
       const jersey_number = this._toInt(playerData?.jersey_number, null);
       const position = this._toString(playerData?.position);
       const age = this._toInt(playerData?.age, null);
-      const matchID = playerData?.matchID ? this._toInt(playerData.matchID, null) : null;  // ✅ ADDED: matchID support
+      const matchID = playerData?.matchID ? this._toInt(playerData.matchID, null) : null;
 
       if (!name || !jersey_number || !position || !age) {
         throw new Error('All fields are required');
@@ -63,17 +63,17 @@ class Player {
 
       const [result] = await db.query(
         `INSERT INTO players (name, jersey_number, position, age, matchID)
-         VALUES (?, ?, ?, ?, ?)`,  // ✅ CHANGED: added matchID
-        [name, jersey_number, position, age, matchID]  // ✅ CHANGED
+         VALUES (?, ?, ?, ?, ?)`,
+        [name, jersey_number, position, age, matchID]
       );
 
       return {
-        playerID: result.insertId,  // ✅ CHANGED: id → playerID
+        playerID: result.insertId,
         name,
         jersey_number,
         position,
         age,
-        matchID,  // ✅ ADDED
+        matchID,
         goals: 0,
         assists: 0,
         appearances: 0,
@@ -89,8 +89,8 @@ class Player {
   }
 
   // Update player stats (active only)
-  static async updateStats(playerID, stats) {  // ✅ CHANGED: parameter id → playerID
-    const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+  static async updateStats(playerID, stats) {
+    const id = this._toInt(playerID, null);
     if (!id) throw new Error('Player not found');
 
     const goals = this._toInt(stats?.goals, 0);
@@ -102,7 +102,7 @@ class Player {
     const [result] = await db.query(
       `UPDATE players
        SET goals = ?, assists = ?, appearances = ?, yellow_cards = ?, red_cards = ?
-       WHERE playerID = ? AND is_active = TRUE`,  // ✅ CHANGED
+       WHERE playerID = ? AND is_active = TRUE`,
       [goals, assists, appearances, yellow_cards, red_cards, id]
     );
 
@@ -114,22 +114,21 @@ class Player {
   }
 
   // Update player basic info (active only)
-  static async update(playerID, playerData) {  // ✅ CHANGED: parameter id → playerID
+  static async update(playerID, playerData) {
     try {
-      const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+      const id = this._toInt(playerID, null);
       if (!id) throw new Error('Player not found');
 
       const name = this._toString(playerData?.name);
       const jersey_number = this._toInt(playerData?.jersey_number, null);
       const position = this._toString(playerData?.position);
       const age = this._toInt(playerData?.age, null);
-      const matchID = playerData?.matchID !== undefined ? this._toInt(playerData.matchID, null) : undefined;  // ✅ ADDED
+      const matchID = playerData?.matchID !== undefined ? this._toInt(playerData.matchID, null) : undefined;
 
       if (!name || !jersey_number || !position || !age) {
         throw new Error('All fields are required');
       }
 
-      // ✅ CHANGED: Handle optional matchID update
       let query, params;
       if (matchID !== undefined) {
         query = `UPDATE players
@@ -159,12 +158,12 @@ class Player {
   }
 
   // Soft delete player
-  static async delete(playerID) {  // ✅ CHANGED: parameter id → playerID
-    const id = this._toInt(playerID, null);  // ✅ CHANGED: use playerID
+  static async delete(playerID) {
+    const id = this._toInt(playerID, null);
     if (!id) throw new Error('Player not found');
 
     const [result] = await db.query(
-      'UPDATE players SET is_active = FALSE WHERE playerID = ? AND is_active = TRUE',  // ✅ CHANGED
+      'UPDATE players SET is_active = FALSE WHERE playerID = ? AND is_active = TRUE',
       [id]
     );
 
@@ -204,7 +203,7 @@ class Player {
     return rows;
   }
 
-  // ✅ ADDED: Get players by match (optional - for squad management)
+  // Get players by match
   static async getByMatch(matchID) {
     const id = this._toInt(matchID, null);
     if (!id) return [];

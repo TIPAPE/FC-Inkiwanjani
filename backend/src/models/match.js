@@ -46,25 +46,25 @@ class Match {
   }
 
   // Get match by ID
-  static async getById(matchID) {  // ✅ CHANGED: parameter id → matchID
-    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+  static async getById(matchID) {
+    const id = this._toInt(matchID, null);
     if (!id) return null;
 
-    const [rows] = await db.query('SELECT * FROM matches WHERE matchID = ?', [id]);  // ✅ CHANGED
+    const [rows] = await db.query('SELECT * FROM matches WHERE matchID = ?', [id]);
     return rows[0] || null;
   }
 
-  // Get upcoming matches (status = upcoming, in the future)
+  // Get upcoming matches (status = upcoming, regardless of date — allows backdated ticket sales)
   static async getUpcoming() {
     const [rows] = await db.query(
       `SELECT * FROM matches
-       WHERE status = 'upcoming' AND match_date >= NOW()
+       WHERE status = 'upcoming'
        ORDER BY match_date ASC`
     );
     return rows;
   }
 
-  // Get next match
+  // Get next match (still respects date — returns the next chronologically future match)
   static async getNext() {
     const [rows] = await db.query(
       `SELECT * FROM matches
@@ -129,7 +129,7 @@ class Match {
     );
 
     return {
-      matchID: result.insertId,  // ✅ CHANGED: id → matchID
+      matchID: result.insertId,
       opponent,
       match_date,
       venue,
@@ -143,11 +143,11 @@ class Match {
   }
 
   // Update match result (marks match completed)
-  static async updateResult(matchID, resultData) {  // ✅ CHANGED: parameter id → matchID
-    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+  static async updateResult(matchID, resultData) {
+    const id = this._toInt(matchID, null);
     if (!id) throw new Error('Match not found');
 
-    // Scores are required for a completed match
+    // Scores are required
     const home_score =
       resultData?.home_score === null || resultData?.home_score === undefined
         ? null
@@ -176,7 +176,7 @@ class Match {
            away_score = ?,
            summary = ?,
            attendance = ?
-       WHERE matchID = ?`,  // ✅ CHANGED: id → matchID
+       WHERE matchID = ?`,
       [home_score, away_score, summary, attendance, id]
     );
 
@@ -187,9 +187,9 @@ class Match {
     return this.getById(id);
   }
 
-  // Update match details (does not change status automatically)
-  static async update(matchID, matchData) {  // ✅ CHANGED: parameter id → matchID
-    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+  // Update match details (does not change status)
+  static async update(matchID, matchData) {
+    const id = this._toInt(matchID, null);
     if (!id) throw new Error('Match not found');
 
     const opponent = this._toString(matchData?.opponent);
@@ -215,7 +215,7 @@ class Match {
     const [result] = await db.query(
       `UPDATE matches
        SET opponent = ?, match_date = ?, venue = ?, competition = ?
-       WHERE matchID = ?`,  // ✅ CHANGED: id → matchID
+       WHERE matchID = ?`,
       [opponent, match_date, venue, competition, id]
     );
 
@@ -227,11 +227,11 @@ class Match {
   }
 
   // Delete match (hard delete; bookings cascade per schema)
-  static async delete(matchID) {  // ✅ CHANGED: parameter id → matchID
-    const id = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+  static async delete(matchID) {
+    const id = this._toInt(matchID, null);
     if (!id) throw new Error('Match not found');
 
-    const [result] = await db.query('DELETE FROM matches WHERE matchID = ?', [id]);  // ✅ CHANGED
+    const [result] = await db.query('DELETE FROM matches WHERE matchID = ?', [id]);
 
     if (result.affectedRows === 0) {
       throw new Error('Match not found');

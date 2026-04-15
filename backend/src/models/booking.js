@@ -37,25 +37,25 @@ class Booking {
     return `BK${datePart}${rand}`;
   }
 
-  static async _matchExists(matchID) {  // ✅ CHANGED: parameter matchId → matchID
-    const [rows] = await db.query('SELECT matchID FROM matches WHERE matchID = ? LIMIT 1', [matchID]);  // ✅ CHANGED
+  static async _matchExists(matchID) {
+    const [rows] = await db.query('SELECT matchID FROM matches WHERE matchID = ? LIMIT 1', [matchID]);
     return !!rows[0];
   }
 
-  // ✅ ADDED: Check if user exists
+  // Check if user exists
   static async _userExists(userID) {
     const [rows] = await db.query('SELECT userID FROM users WHERE userID = ? AND is_active = TRUE LIMIT 1', [userID]);
     return !!rows[0];
   }
 
-  // Get all bookings (includes match metadata and user info)
+  // Get all bookings (includes match and user info — uses LEFT JOIN for guest bookings without userID)
   static async getAll() {
     const [rows] = await db.query(
-      `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
+      `SELECT b.*, m.opponent, m.match_date, m.venue, m.status as match_status, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.matchID = m.matchID
-       JOIN users u ON b.userID = u.userID
-       ORDER BY b.booking_date DESC`  // ✅ CHANGED: match_id → matchID, added user join
+       LEFT JOIN matches m ON b.matchID = m.matchID
+       LEFT JOIN users u ON b.userID = u.userID
+       ORDER BY b.booking_date DESC`
     );
     return rows;
   }
@@ -65,8 +65,8 @@ class Booking {
     const [rows] = await db.query(
       `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.matchID = m.matchID
-       JOIN users u ON b.userID = u.userID
+       LEFT JOIN matches m ON b.matchID = m.matchID
+       LEFT JOIN users u ON b.userID = u.userID
        ORDER BY b.booking_date DESC
        LIMIT ? OFFSET ?`,
       [limit, offset]
@@ -81,16 +81,16 @@ class Booking {
   }
 
   // Get booking by ID
-  static async getById(bookingID) {  // ✅ CHANGED: parameter id → bookingID
-    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+  static async getById(bookingID) {
+    const id = this._toInt(bookingID, null);
     if (!id) return null;
 
     const [rows] = await db.query(
       `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.matchID = m.matchID
-       JOIN users u ON b.userID = u.userID
-       WHERE b.bookingID = ?`,  // ✅ CHANGED: id → bookingID, match_id → matchID, added user join
+       LEFT JOIN matches m ON b.matchID = m.matchID
+       LEFT JOIN users u ON b.userID = u.userID
+       WHERE b.bookingID = ?`,
       [id]
     );
     return rows[0] || null;
@@ -104,31 +104,31 @@ class Booking {
     const [rows] = await db.query(
       `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN matches m ON b.matchID = m.matchID
-       JOIN users u ON b.userID = u.userID
-       WHERE b.booking_reference = ?`,  // ✅ CHANGED: match_id → matchID, added user join
+       LEFT JOIN matches m ON b.matchID = m.matchID
+       LEFT JOIN users u ON b.userID = u.userID
+       WHERE b.booking_reference = ?`,
       [ref]
     );
     return rows[0] || null;
   }
 
   // Get bookings by match
-  static async getByMatch(matchID) {  // ✅ CHANGED: parameter matchId → matchID
-    const mId = this._toInt(matchID, null);  // ✅ CHANGED: use matchID
+  static async getByMatch(matchID) {
+    const mId = this._toInt(matchID, null);
     if (!mId) return [];
 
     const [rows] = await db.query(
       `SELECT b.*, u.full_name as user_name, u.email as user_email
        FROM bookings b
-       JOIN users u ON b.userID = u.userID
+       LEFT JOIN users u ON b.userID = u.userID
        WHERE b.matchID = ?
-       ORDER BY b.booking_date DESC`,  // ✅ CHANGED: match_id → matchID, added user join
+       ORDER BY b.booking_date DESC`,
       [mId]
     );
     return rows;
   }
 
-  // ✅ ADDED: Get bookings by user
+  // Get bookings by user
   static async getByUser(userID) {
     const uId = this._toInt(userID, null);
     if (!uId) return [];
@@ -136,7 +136,7 @@ class Booking {
     const [rows] = await db.query(
       `SELECT b.*, m.opponent, m.match_date, m.venue
        FROM bookings b
-       JOIN matches m ON b.matchID = m.matchID
+       LEFT JOIN matches m ON b.matchID = m.matchID
        WHERE b.userID = ?
        ORDER BY b.booking_date DESC`,
       [uId]
@@ -152,10 +152,10 @@ class Booking {
     const [rows] = await db.query(
       `SELECT b.*, m.opponent, m.match_date, m.venue, u.full_name as user_name
        FROM bookings b
-       JOIN matches m ON b.matchID = m.matchID
-       JOIN users u ON b.userID = u.userID
+       LEFT JOIN matches m ON b.matchID = m.matchID
+       LEFT JOIN users u ON b.userID = u.userID
        WHERE b.customer_email = ?
-       ORDER BY b.booking_date DESC`,  // ✅ CHANGED: match_id → matchID, added user join
+       ORDER BY b.booking_date DESC`,
       [normalized]
     );
     return rows;
@@ -171,7 +171,7 @@ class Booking {
     const ticket_type = this._toString(bookingData?.ticket_type);
     const quantity = this._toInt(bookingData?.quantity, null);
 
-    // total_amount comes from client currently — we accept it but validate it
+    // total_amount comes from client -- validate it
     const total_amount_raw = this._toNumber(bookingData?.total_amount, null);
 
     if (
@@ -194,7 +194,7 @@ class Booking {
       throw new Error('Invalid quantity');
     }
 
-    // Ensure match exists (clearer error than FK failure)
+    // Ensure match exists
     const matchExists = await this._matchExists(matchID);
     if (!matchExists) {
       throw new Error('Match not found');
@@ -214,9 +214,7 @@ class Booking {
     }
     const total_amount = this._roundMoney(total_amount_raw);
 
-    // In production, payment_status should usually start as 'pending' until payment confirms.
-    // Since your app currently treats booking as paid immediately, we keep 'paid' for compatibility.
-    // If you add payments later, switch this default to 'pending'.
+    // Default payment status is 'paid'
     const payment_status = 'paid';
 
     // Insert with retry on reference collision (very rare, but safe)
@@ -261,7 +259,7 @@ class Booking {
           payment_status,
         };
       } catch (error) {
-        // Duplicate booking_reference — regenerate and retry
+        // Duplicate booking_reference - regenerate and retry
         if (error?.code === 'ER_DUP_ENTRY' && String(error?.message || '').includes('booking_reference')) {
           continue;
         }
@@ -273,8 +271,8 @@ class Booking {
   }
 
   // Update payment status
-  static async updatePaymentStatus(bookingID, status) {  // ✅ CHANGED: parameter id → bookingID
-    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+  static async updatePaymentStatus(bookingID, status) {
+    const id = this._toInt(bookingID, null);
     if (!id) throw new Error('Booking not found');
 
     const s = this._toString(status);
@@ -285,7 +283,7 @@ class Booking {
     }
 
     const [result] = await db.query(
-      'UPDATE bookings SET payment_status = ? WHERE bookingID = ?',  // ✅ CHANGED
+      'UPDATE bookings SET payment_status = ? WHERE bookingID = ?',
       [s, id]
     );
 
@@ -297,12 +295,12 @@ class Booking {
   }
 
   // Cancel booking
-  static async cancel(bookingID) {  // ✅ CHANGED: parameter id → bookingID
-    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+  static async cancel(bookingID) {
+    const id = this._toInt(bookingID, null);
     if (!id) throw new Error('Booking not found');
 
     const [result] = await db.query(
-      'UPDATE bookings SET payment_status = ? WHERE bookingID = ?',  // ✅ CHANGED
+      'UPDATE bookings SET payment_status = ? WHERE bookingID = ?',
       ['cancelled', id]
     );
 
@@ -314,11 +312,11 @@ class Booking {
   }
 
   // Delete booking
-  static async delete(bookingID) {  // ✅ CHANGED: parameter id → bookingID
-    const id = this._toInt(bookingID, null);  // ✅ CHANGED: use bookingID
+  static async delete(bookingID) {
+    const id = this._toInt(bookingID, null);
     if (!id) throw new Error('Booking not found');
 
-    const [result] = await db.query('DELETE FROM bookings WHERE bookingID = ?', [id]);  // ✅ CHANGED
+    const [result] = await db.query('DELETE FROM bookings WHERE bookingID = ?', [id]);
 
     if (result.affectedRows === 0) {
       throw new Error('Booking not found');
@@ -370,7 +368,7 @@ class Booking {
        FROM matches m
        LEFT JOIN bookings b ON m.matchID = b.matchID
        GROUP BY m.matchID, m.opponent, m.match_date
-       ORDER BY m.match_date DESC`  // ✅ CHANGED: id → matchID, match_id → matchID
+       ORDER BY m.match_date DESC`
     );
     return rows;
   }

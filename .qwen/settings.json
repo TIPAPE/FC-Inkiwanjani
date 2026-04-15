@@ -10,7 +10,8 @@
       "Bash(curl *)",
       "Bash(taskkill *)",
       "Bash(node *)",
-      "Bash(powershell *)"
+      "Bash(powershell *)",
+      "Bash(npm install *)"
     ]
   },
   "$version": 3

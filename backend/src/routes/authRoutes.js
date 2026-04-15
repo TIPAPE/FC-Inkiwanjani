@@ -1,26 +1,22 @@
-// backend/src/routes/authRoutes.js
+// Auth routes
 const express = require('express');
 const router = express.Router();
 
 const authController = require('../controllers/authController');
+const passwordResetController = require('../controllers/passwordResetController');
 const auth = require('../middleware/auth');
 const { loginLimiter } = require('../middleware/rateLimiter');
 
-// ─────────────────────────────────────────────
-// PUBLIC ROUTES
-// ─────────────────────────────────────────────
-
-// POST /api/auth/login
+// Public routes
 router.post('/login', loginLimiter, authController.login);
-
-// POST /api/auth/signup/user
 router.post('/signup/user', authController.signupUser);
 
-// ─────────────────────────────────────────────
-// PROTECTED ROUTES
-// ─────────────────────────────────────────────
+// Password reset routes
+router.post('/forgot-password', passwordResetController.forgotPassword);
+router.post('/reset-password/verify', passwordResetController.verifyResetToken);
+router.post('/reset-password', passwordResetController.resetPassword);
 
-// POST /api/auth/signup/admin — only super_admin may create new admins
+// Protected routes
 router.post(
   '/signup/admin',
   auth,
@@ -29,11 +25,8 @@ router.post(
   authController.signupAdmin
 );
 
-// GET /api/auth/verify
+router.post('/logout', auth, authController.logout);
 router.get('/verify', auth, authController.verifyToken);
-
-// GET /api/auth/profile
 router.get('/profile', auth, authController.getProfile);
-
 
 module.exports = router;

@@ -1,4 +1,4 @@
-// backend/src/routes/publicRoutes.js
+// Public routes
 const express = require('express');
 const router = express.Router();
 
@@ -18,7 +18,7 @@ const pollsController = require('../controllers/pollsController');
 const membershipsController = require('../controllers/membershipsController');
 const { bookingLimiter, commentLimiter, pollLimiter } = require('../middleware/rateLimiter');
 
-// ================== HELPERS ==================
+// Helper utilities
 const sendError = (res, status, message, data = undefined) => {
   return res.status(status).json({
     success: false,
@@ -58,16 +58,12 @@ const isValidId = (id) => {
   return n !== null && n > 0;
 };
 
-// Schema enums (match your DB constraints)
+// Allowed enum values
 const NEWS_CATEGORIES = new Set(['match-report', 'transfer', 'announcement', 'community']);
 const PLAYER_POSITIONS = new Set(['goalkeeper', 'defender', 'midfielder', 'forward']);
 const TICKET_TYPES = new Set(['vip', 'regular', 'student']);
 
-// ================== NEWS ROUTES (Public) ==================
-
-// IMPORTANT: Put specific routes BEFORE /news/:id to avoid collisions
-
-// Get latest news
+// News routes
 router.get('/news/latest', async (req, res) => {
   try {
     const limit = req.query.limit ? toInt(req.query.limit) : 5;
@@ -105,7 +101,7 @@ router.get('/news/category/:category', async (req, res) => {
 // Get all published news (with pagination)
 router.get('/news', async (req, res) => {
   try {
-    // Check if pagination is requested
+    // Use pagination if requested
     const usePagination = req.query.page || req.query.limit;
 
     if (usePagination) {
@@ -117,7 +113,6 @@ router.get('/news', async (req, res) => {
       return sendPaginated(res, 200, news, totalCount, page, limit);
     }
 
-    // Fallback: return all (backward compatibility)
     const news = await News.getAll();
     return sendSuccess(res, 200, news);
   } catch (error) {
@@ -163,9 +158,7 @@ router.get('/news/search', async (req, res) => {
   }
 });
 
-// ================== MATCH ROUTES (Public) ==================
-
-// Get next match
+// Match routes
 router.get('/matches/next', async (req, res) => {
   try {
     const match = await Match.getNext();
@@ -217,7 +210,7 @@ router.get('/matches/completed', async (req, res) => {
 // Get all matches (with pagination)
 router.get('/matches', async (req, res) => {
   try {
-    // Check if pagination is requested
+    // Use pagination if requested
     const usePagination = req.query.page || req.query.limit;
 
     if (usePagination) {
@@ -229,7 +222,6 @@ router.get('/matches', async (req, res) => {
       return sendPaginated(res, 200, matches, totalCount, page, limit);
     }
 
-    // Fallback: return all (backward compatibility)
     const matches = await Match.getAll();
     return sendSuccess(res, 200, matches);
   } catch (error) {
@@ -241,13 +233,13 @@ router.get('/matches', async (req, res) => {
 // Get match by ID
 router.get('/matches/:id', async (req, res) => {
   try {
-    const { id } = req.params;  // ✅ Keep as 'id' in route params
+    const { id } = req.params;
 
     if (!isValidId(id)) {
       return sendError(res, 400, 'Invalid match id');
     }
 
-    const match = await Match.getById(id);  // ✅ Pass to model which expects matchID
+    const match = await Match.getById(id);
 
     if (!match) {
       return sendError(res, 404, 'Match not found');
@@ -260,10 +252,7 @@ router.get('/matches/:id', async (req, res) => {
   }
 });
 
-// ================== PLAYER ROUTES (Public) ==================
-// IMPORTANT: Put specific routes BEFORE /players/:id to avoid collisions
-
-// Get top scorers
+// Player routes
 router.get('/players/top/scorers', async (req, res) => {
   try {
     const limit = req.query.limit ? toInt(req.query.limit) : 5;
@@ -301,7 +290,7 @@ router.get('/players/position/:position', async (req, res) => {
 // Get all players (with pagination)
 router.get('/players', async (req, res) => {
   try {
-    // Check if pagination is requested
+    // Use pagination if requested
     const usePagination = req.query.page || req.query.limit;
 
     if (usePagination) {
@@ -313,7 +302,6 @@ router.get('/players', async (req, res) => {
       return sendPaginated(res, 200, players, totalCount, page, limit);
     }
 
-    // Fallback: return all (backward compatibility)
     const players = await Player.getAll();
     return sendSuccess(res, 200, players);
   } catch (error) {
@@ -344,9 +332,7 @@ router.get('/players/:id', async (req, res) => {
   }
 });
 
-// ================== SETTINGS ROUTES (Public) ==================
-
-// Get ticket prices
+// Settings routes
 router.get('/settings/ticket-prices', async (req, res) => {
   try {
     const prices = await Settings.getTicketPrices();
@@ -379,9 +365,7 @@ router.get('/settings/membership-fee', async (req, res) => {
   }
 });
 
-// ================== BOOKINGS ROUTES (Public) ==================
-
-// Create a booking (public) - Authentication optional (guest checkout supported)
+// Booking routes
 router.post('/bookings', bookingLimiter, async (req, res) => {
   try {
     const matchID = toInt(req.body?.matchID || req.body?.match_id);
@@ -391,7 +375,6 @@ router.post('/bookings', bookingLimiter, async (req, res) => {
     const ticket_type = safeTrim(req.body?.ticket_type);
     const quantity = toInt(req.body?.quantity);
 
-    // Get userID from authenticated user if available (optional)
     const userID = req.user?.id || null;
 
     if (
@@ -435,7 +418,7 @@ router.post('/bookings', bookingLimiter, async (req, res) => {
 
     const booking = await Booking.create({
       matchID,
-      userID,       // Optional - null for guest bookings
+      userID,
       customer_name,
       customer_email,
       customer_phone,
@@ -472,7 +455,14 @@ router.get('/bookings', async (req, res) => {
       return sendError(res, 400, 'Invalid email', []);
     }
 
-    const bookings = await Booking.getByEmail(email);  // ✅ This already works with new schema
+    console.log('[Bookings] Fetching bookings for email:', email);
+    const bookings = await Booking.getByEmail(email);
+    console.log('[Bookings] Found', bookings.length, 'bookings');
+    if (bookings.length > 0) {
+      bookings.forEach((b, i) => {
+        console.log(`  [${i}] bookingID: ${b.bookingID}, booking_reference: ${b.booking_reference || '(null)'}`);
+      });
+    }
 
     return sendSuccess(res, 200, bookings);
   } catch (error) {
@@ -481,9 +471,7 @@ router.get('/bookings', async (req, res) => {
   }
 });
 
-// ================== GALLERY ROUTES (Public) ==================
-
-// Get all gallery items
+// Gallery routes
 router.get('/gallery', galleryController.getAll);
 
 // Get gallery item by ID
@@ -492,17 +480,13 @@ router.get('/gallery/:id', galleryController.getById);
 // Get gallery items by match
 router.get('/gallery/match/:matchID', galleryController.getByMatch);
 
-// ================== COMMENTS ROUTES (Public) ==================
-
-// Get all approved comments
+// Comment routes
 router.get('/comments', commentsController.getAll);
 
-// Post a new comment (auth optional — guest comments allowed)
+// Post a new comment
 router.post('/comments', commentLimiter, commentsController.create);
 
-// ================== POLLS ROUTES (Public) ==================
-
-// Get active poll
+// Poll routes
 router.get('/polls/active', pollsController.getActivePoll);
 
 // Get poll results
@@ -511,9 +495,7 @@ router.get('/polls/:id/results', pollsController.getPollResults);
 // Cast a vote
 router.post('/polls/:id/vote', pollLimiter, pollsController.vote);
 
-// ================== MEMBERSHIPS ROUTES (Public) ==================
-
-// Register a new membership
+// Membership routes
 router.post('/memberships', membershipsController.create);
 
 module.exports = router;

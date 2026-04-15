@@ -42,7 +42,7 @@ const validateCreate = ({ username, email, password, full_name }) => {
 
 class User {
 
-  // Creates a new user record with a hashed password
+  // Create a new user with hashed password
   static async create({ username, email, password, full_name, phone }) {
     const clean = validateCreate({ username, email, password, full_name });
 
@@ -77,7 +77,7 @@ class User {
     }
   }
 
-  // Retrieves a user by email, including password hash for login verification
+  // Find user by email (includes password_hash for login)
   static async findByEmail(email) {
     const [rows] = await pool.execute(
       'SELECT * FROM users WHERE email = ? AND is_active = TRUE LIMIT 1',
@@ -86,7 +86,7 @@ class User {
     return rows[0] || null;
   }
 
-  // Retrieves a user by username
+  // Find user by username
   static async findByUsername(username) {
     const [rows] = await pool.execute(
       'SELECT * FROM users WHERE username = ? AND is_active = TRUE LIMIT 1',
@@ -95,7 +95,7 @@ class User {
     return rows[0] || null;
   }
 
-  // Retrieves a user by ID, returning only safe public fields
+  // Find user by ID (public fields only)
   static async findById(userID) {
     const [rows] = await pool.execute(
       `SELECT userID, username, email, full_name, phone, last_login, created_at
@@ -107,7 +107,7 @@ class User {
     return rows[0] || null;
   }
 
-  // Retrieves all active users, ordered by registration date (admin use)
+  // Get all active users (admin use)
   static async findAll() {
     const [rows] = await pool.execute(
       `SELECT userID, username, email, full_name, phone, last_login, created_at
@@ -118,18 +118,18 @@ class User {
     return rows;
   }
 
-  // Compares a plain-text password against the stored hash
+  // Verify plain-text password against stored hash
   static async verifyPassword(plainPassword, hashedPassword) {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  // Updates the last_login timestamp for the given user
+  // Update last_login timestamp
   static async updateLastLogin(userID) {
     await pool.execute('UPDATE users SET last_login = NOW() WHERE userID = ?', [userID]);
     return true;
   }
 
-  // Updates profile fields; ignores null values to preserve existing data
+  // Update user profile; null values preserve existing data
   static async updateProfile(userID, { full_name, phone }) {
     await pool.execute(
       `UPDATE users
@@ -142,7 +142,7 @@ class User {
     return this.findById(userID);
   }
 
-  // Soft-deletes a user account by marking it inactive
+  // Soft-delete user by marking inactive
   static async deactivate(userID) {
     await pool.execute(
       'UPDATE users SET is_active = FALSE WHERE userID = ?',

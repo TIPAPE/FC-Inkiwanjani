@@ -1,7 +1,7 @@
 // backend/src/controllers/reportsController.js
 const db = require('../config/database');
 
-// ─── HELPERS ────────────────────────────────────────────────────────────────
+// Helpers
 
 const buildDateCondition = (startDate, endDate, column = 'transaction_date', prefix = '') => {
   if (startDate && endDate)
@@ -9,7 +9,7 @@ const buildDateCondition = (startDate, endDate, column = 'transaction_date', pre
   return '';
 };
 
-// ─── 1. PLAYER PERFORMANCE REPORT ───────────────────────────────────────────
+// Player performance report
 exports.getPlayerPerformanceReport = async (req, res) => {
   try {
     const { position, minGoals, minAppearances } = req.query;
@@ -68,7 +68,7 @@ exports.getPlayerPerformanceReport = async (req, res) => {
   }
 };
 
-// ─── 2. SQUAD OVERVIEW REPORT ────────────────────────────────────────────────
+// Squad overview report
 exports.getSquadOverviewReport = async (req, res) => {
   try {
     const [squad] = await db.execute(`
@@ -116,7 +116,7 @@ exports.getSquadOverviewReport = async (req, res) => {
   }
 };
 
-// ─── 3. TOP SCORERS REPORT ───────────────────────────────────────────────────
+// Top scorers report
 exports.getTopScorersReport = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
@@ -155,7 +155,7 @@ exports.getTopScorersReport = async (req, res) => {
   }
 };
 
-// ─── 4. MATCH RESULTS / PERFORMANCE REPORT ───────────────────────────────────
+// Match performance report
 exports.getMatchPerformanceReport = async (req, res) => {
   try {
     const { season, competition, venue } = req.query;
@@ -197,7 +197,7 @@ exports.getMatchPerformanceReport = async (req, res) => {
       ${whereClause}
     `);
 
-    // Home vs Away breakdown
+    // Home vs away breakdown
     const [venueBreakdown] = await db.execute(`
       SELECT
         venue,
@@ -241,7 +241,7 @@ exports.getMatchPerformanceReport = async (req, res) => {
   }
 };
 
-// ─── 5. FIXTURES REPORT ──────────────────────────────────────────────────────
+// Fixtures report
 exports.getFixturesReport = async (req, res) => {
   try {
     const { days = 30, competition, venue } = req.query;
@@ -270,7 +270,7 @@ exports.getFixturesReport = async (req, res) => {
   }
 };
 
-// ─── 6. SEASON PERFORMANCE REPORT ───────────────────────────────────────────
+// Season performance report
 exports.getSeasonPerformanceReport = async (req, res) => {
   try {
     const { season } = req.query;
@@ -346,7 +346,7 @@ exports.getSeasonPerformanceReport = async (req, res) => {
   }
 };
 
-// ─── 7. TICKET SALES REPORT ──────────────────────────────────────────────────
+// Ticket sales report
 exports.getTicketSalesReport = async (req, res) => {
   try {
     const { startDate, endDate, matchID, ticketType, paymentStatus } = req.query;
@@ -418,7 +418,7 @@ exports.getTicketSalesReport = async (req, res) => {
   }
 };
 
-// ─── 8. REVENUE SUMMARY REPORT ───────────────────────────────────────────────
+// Revenue summary report
 exports.getRevenueReport = async (req, res) => {
   try {
     const { startDate, endDate, groupBy = 'month' } = req.query;
@@ -471,7 +471,7 @@ exports.getRevenueReport = async (req, res) => {
       ${dateCondition}
     `);
 
-    // Revenue growth: compare last two full periods
+    // Revenue growth comparison
     const [growth] = await db.execute(`
       SELECT
         DATE_FORMAT(transaction_date, '%Y-%m') AS month,
@@ -492,7 +492,7 @@ exports.getRevenueReport = async (req, res) => {
   }
 };
 
-// ─── 9. MATCH DAY REVENUE REPORT ─────────────────────────────────────────────
+// Match day revenue report
 exports.getMatchDayRevenueReport = async (req, res) => {
   try {
     const { startDate, endDate, matchID, competition } = req.query;
@@ -544,7 +544,7 @@ exports.getMatchDayRevenueReport = async (req, res) => {
   }
 };
 
-// ─── 10. MEMBERSHIP OVERVIEW REPORT ─────────────────────────────────────────
+// Membership overview report
 exports.getMembershipReport = async (req, res) => {
   try {
     const { status = 'all' } = req.query;
@@ -616,7 +616,7 @@ exports.getMembershipReport = async (req, res) => {
   }
 };
 
-// ─── 11. EXPIRING MEMBERSHIPS REPORT ────────────────────────────────────────
+// Expiring memberships report
 exports.getExpiringMembershipsReport = async (req, res) => {
   try {
     const { days = 30 } = req.query;
@@ -652,7 +652,7 @@ exports.getExpiringMembershipsReport = async (req, res) => {
   }
 };
 
-// ─── 12. POLL RESULTS REPORT ─────────────────────────────────────────────────
+// Poll results report
 exports.getPollResultsReport = async (req, res) => {
   try {
     const { matchID, status } = req.query;
@@ -663,7 +663,7 @@ exports.getPollResultsReport = async (req, res) => {
     if (status === 'closed')   whereConditions.push(`p.is_active = FALSE`);
     const whereClause = whereConditions.length ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    // Adjust column names to your polls schema
+    // Adjust column names to schema
     const [polls] = await db.execute(`
       SELECT
         p.pollID, p.question, p.description, p.is_active, p.created_at,
@@ -687,7 +687,7 @@ exports.getPollResultsReport = async (req, res) => {
   }
 };
 
-// ─── 13. ATTENDANCE REPORT ───────────────────────────────────────────────────
+// Attendance report
 exports.getAttendanceReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -746,7 +746,7 @@ exports.getAttendanceReport = async (req, res) => {
   }
 };
 
-// ─── 14. EXECUTIVE DASHBOARD REPORT ─────────────────────────────────────────
+// Executive dashboard report
 exports.getExecutiveDashboardReport = async (req, res) => {
   try {
     const { period = 'month' } = req.query;
@@ -826,7 +826,7 @@ exports.getExecutiveDashboardReport = async (req, res) => {
   }
 };
 
-// ─── EXPORT CSV (all reports) ────────────────────────────────────────────────
+// Export report to CSV
 exports.exportReportCSV = async (req, res) => {
   try {
     const { reportType, ...filters } = req.query;
@@ -858,7 +858,7 @@ exports.exportReportCSV = async (req, res) => {
     const result = fakeRes._data;
     if (!result || !result.success) return res.status(500).json({ success: false, message: 'Could not fetch data' });
 
-    // Extract the most relevant tabular data from each report
+    // Extract tabular data from report
     const dataExtractors = {
       revenue:              (d) => d.breakdown,
       tickets:              (d) => d.byMatch,

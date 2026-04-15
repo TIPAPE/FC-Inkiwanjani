@@ -9,10 +9,7 @@ const sendSuccess = (res, status, data, message) =>
 
 const toInt = (v) => { const n = Number.parseInt(v, 10); return Number.isFinite(n) ? n : null; };
 
-/**
- * GET /api/polls/active
- * Returns the currently active poll with its options (players).
- */
+// Get active poll with options
 exports.getActivePoll = async (req, res) => {
   try {
     const [pollRows] = await db.query(
@@ -30,7 +27,7 @@ exports.getActivePoll = async (req, res) => {
 
     const poll = pollRows[0];
 
-    // Get players in this poll
+    // Get poll players
     const [playerRows] = await db.query(
       `SELECT p.playerID, p.name, p.jersey_number, p.position
        FROM poll_votes pv
@@ -50,10 +47,7 @@ exports.getActivePoll = async (req, res) => {
   }
 };
 
-/**
- * GET /api/polls/:id/results
- * Returns vote counts for each player in the poll.
- */
+// Get poll results
 exports.getPollResults = async (req, res) => {
   try {
     const pollID = toInt(req.params.id);
@@ -76,11 +70,7 @@ exports.getPollResults = async (req, res) => {
   }
 };
 
-/**
- * POST /api/polls/:id/vote
- * Casts a vote for a player in the poll.
- * Uses voter_ip for duplicate detection (basic protection).
- */
+// Cast vote
 exports.vote = async (req, res) => {
   try {
     const pollID = toInt(req.params.id);
@@ -90,7 +80,7 @@ exports.vote = async (req, res) => {
       return sendError(res, 400, 'pollID and playerID are required');
     }
 
-    // Verify poll exists and is active
+    // Verify poll is active
     const [pollRows] = await db.query(
       'SELECT pollID, is_active FROM polls WHERE pollID = ? LIMIT 1',
       [pollID]
@@ -98,7 +88,7 @@ exports.vote = async (req, res) => {
     if (!pollRows.length) return sendError(res, 404, 'Poll not found');
     if (!pollRows[0].is_active) return sendError(res, 400, 'Poll is no longer active');
 
-    // Verify player exists
+    // Verify player
     const [playerRows] = await db.query(
       'SELECT playerID, name FROM players WHERE playerID = ? AND is_active = TRUE LIMIT 1',
       [playerID]
@@ -111,7 +101,7 @@ exports.vote = async (req, res) => {
       req.socket?.remoteAddress ||
       'unknown';
 
-    // Check for duplicate vote
+    // Check duplicate vote
     const [existingVotes] = await db.query(
       'SELECT pollVoteID FROM poll_votes WHERE pollID = ? AND voter_ip = ? LIMIT 1',
       [pollID, voter_ip]
@@ -133,12 +123,7 @@ exports.vote = async (req, res) => {
   }
 };
 
-// ================== ADMIN ENDPOINTS ==================
-
-/**
- * POST /api/admin/polls
- * Creates a new poll and adds player options.
- */
+// Admin: create poll
 exports.createPoll = async (req, res) => {
   try {
     const adminUserID = req.user.id;
@@ -174,10 +159,7 @@ exports.createPoll = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/admin/polls/:id
- * Deletes a poll and all its votes.
- */
+// Admin: delete poll
 exports.deletePoll = async (req, res) => {
   try {
     const id = toInt(req.params.id);
@@ -194,10 +176,7 @@ exports.deletePoll = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/admin/polls/:id/deactivate
- * Deactivates a poll (stops accepting votes).
- */
+// Admin: deactivate poll
 exports.deactivatePoll = async (req, res) => {
   try {
     const id = toInt(req.params.id);
@@ -216,10 +195,7 @@ exports.deactivatePoll = async (req, res) => {
   }
 };
 
-/**
- * GET /api/admin/polls
- * Returns all polls with their vote counts.
- */
+// Admin: get all polls
 exports.getAllPolls = async (req, res) => {
   try {
     const [pollRows] = await db.query(

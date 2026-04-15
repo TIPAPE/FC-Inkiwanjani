@@ -7,11 +7,8 @@ const Revenue = require('../models/Revenue');
 const Settings = require('../models/Settings');
 const { parsePagination, sendPaginated } = require('../utils/pagination');
 
-// ================== HELPERS ==================
+// Helpers
 
-/**
- * Sends a standardized error response.
- */
 const sendError = (res, status, message, extra = undefined) => {
   return res.status(status).json({
     success: false,
@@ -20,9 +17,6 @@ const sendError = (res, status, message, extra = undefined) => {
   });
 };
 
-/**
- * Sends a standardized success response.
- */
 const sendSuccess = (res, status, message, data) => {
   return res.status(status).json({
     success: true,
@@ -31,38 +25,23 @@ const sendSuccess = (res, status, message, data) => {
   });
 };
 
-/**
- * Parses a value to a finite integer. Returns null if parsing fails.
- */
 const toInt = (value) => {
   const n = Number.parseInt(String(value), 10);
   return Number.isFinite(n) ? n : null;
 };
 
-/**
- * Parses a value to a finite float. Returns null if parsing fails.
- */
 const toFloat = (value) => {
   const n = Number.parseFloat(String(value));
   return Number.isFinite(n) ? n : null;
 };
 
-/**
- * Trims a string value. Returns the original value unchanged if not a string.
- */
 const safeTrim = (v) => (typeof v === 'string' ? v.trim() : v);
 
-/**
- * Returns true if the value parses to a positive integer.
- */
 const isValidId = (id) => {
   const n = toInt(id);
   return n !== null && n > 0;
 };
 
-/**
- * Returns true for valid ISO date-time strings or "YYYY-MM-DD HH:MM:SS" format.
- */
 const isValidDateTime = (v) => {
   if (typeof v !== 'string') return false;
   const s = v.trim();
@@ -72,9 +51,6 @@ const isValidDateTime = (v) => {
   return /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(s);
 };
 
-/**
- * Returns true for valid "YYYY-MM-DD" date strings.
- */
 const isValidDate = (v) => {
   if (typeof v !== 'string') return false;
   const s = v.trim();
@@ -83,23 +59,18 @@ const isValidDate = (v) => {
   return !Number.isNaN(d.getTime());
 };
 
-// Schema enums — must stay in sync with DB ENUM definitions
+// Schema enums
 const PLAYER_POSITIONS  = new Set(['goalkeeper', 'defender', 'midfielder', 'forward']);
 const MATCH_VENUES      = new Set(['home', 'away']);
 const MATCH_COMPETITIONS = new Set(['league', 'cup', 'friendly']);
 const NEWS_CATEGORIES   = new Set(['match-report', 'transfer', 'announcement', 'community']);
 const REVENUE_SOURCES   = new Set(['tickets', 'merchandise', 'membership', 'sponsorship', 'other']);
 
-// Player age constraints — aligned with frontend validation
 const PLAYER_AGE_MIN = 15;
 const PLAYER_AGE_MAX = 55;
 
-// ================== PLAYER MANAGEMENT ==================
+// Player management
 
-/**
- * GET /api/admin/players
- * Returns all players.
- */
 exports.getAllPlayers = async (req, res) => {
   try {
     const players = await Player.getAll();
@@ -500,6 +471,12 @@ exports.deleteNews = async (req, res) => {
 exports.getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.getAll();
+    console.log('[Admin Bookings] Returning', bookings.length, 'bookings');
+    if (bookings.length > 0) {
+      bookings.forEach((b, i) => {
+        console.log(`  [${i}] ID: ${b.bookingID}, Ref: ${b.booking_reference || '(null)'}, Status: ${b.payment_status}, Match: ${b.opponent || 'unknown'}, Match Status: ${b.match_status || 'unknown'}`);
+      });
+    }
     return sendSuccess(res, 200, null, bookings);
   } catch (error) {
     console.error('Get bookings error:', error);
@@ -706,8 +683,6 @@ exports.updateMembershipFee = async (req, res) => {
   }
 };
 
-// ================== DASHBOARD STATS ==================
-
 /**
  * GET /api/admin/dashboard/stats
  * Aggregates all dashboard data in a single parallel request.
@@ -753,8 +728,6 @@ exports.getDashboardStats = async (req, res) => {
     return sendError(res, 500, 'Failed to fetch dashboard statistics');
   }
 };
-
-// ================== ADMIN MANAGEMENT (super_admin only) ==================
 
 /**
  * GET /api/admin/admins

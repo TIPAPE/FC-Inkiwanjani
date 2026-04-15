@@ -8,7 +8,7 @@ class News {
     return String(value).trim();
   }
 
-  static _toInt(value, fallback = null) {  // ✅ ADDED: helper for IDs
+  static _toInt(value, fallback = null) {
     const n = Number.parseInt(value, 10);
     return Number.isFinite(n) && n > 0 ? n : fallback;
   }
@@ -70,7 +70,7 @@ class News {
     return q.replace(/[\\%_]/g, (m) => `\\${m}`);
   }
 
-  // ✅ ADDED: Validate admin user exists
+  // Validate admin user exists
   static async _adminExists(adminUserID) {
     const [rows] = await db.query(
       'SELECT adminUserID FROM admin_users WHERE adminUserID = ? AND is_active = TRUE LIMIT 1',
@@ -86,7 +86,7 @@ class News {
        FROM news n
        JOIN admin_users a ON n.adminUserID = a.adminUserID
        WHERE n.is_published = TRUE
-       ORDER BY n.published_date DESC, n.created_at DESC`  // ✅ CHANGED: Added admin join
+       ORDER BY n.published_date DESC, n.created_at DESC`
     );
     return rows;
   }
@@ -123,7 +123,7 @@ class News {
        JOIN admin_users a ON n.adminUserID = a.adminUserID
        WHERE n.is_published = TRUE
        ORDER BY n.published_date DESC, n.created_at DESC
-       LIMIT ?`,  // ✅ CHANGED: Added admin join
+       LIMIT ?`,
       [safeLimit]
     );
     return rows;
@@ -137,36 +137,34 @@ class News {
        FROM news n
        JOIN admin_users a ON n.adminUserID = a.adminUserID
        WHERE n.category = ? AND n.is_published = TRUE
-       ORDER BY n.published_date DESC, n.created_at DESC`,  // ✅ CHANGED: Added admin join
+       ORDER BY n.published_date DESC, n.created_at DESC`,
       [c]
     );
     return rows;
   }
 
-  static async getById(newsID, { incrementViews = true } = {}) {  // ✅ CHANGED: parameter id → newsID
-    const id = this._validateId(newsID);  // ✅ CHANGED: use newsID
+  static async getById(newsID, { incrementViews = true } = {}) {
+    const id = this._validateId(newsID);
 
-    // single query fetch with admin info
     const [rows] = await db.query(
       `SELECT n.*, a.full_name as admin_name, a.email as admin_email
        FROM news n
        JOIN admin_users a ON n.adminUserID = a.adminUserID
-       WHERE n.newsID = ?`,  // ✅ CHANGED: id → newsID, added admin join
+       WHERE n.newsID = ?`,
       [id]
     );
     const article = rows[0] || null;
 
     // Only increment views for published articles (public consumption)
     if (article && incrementViews && article.is_published) {
-      // Atomic increment
-      await db.query('UPDATE news SET views = views + 1 WHERE newsID = ?', [id]);  // ✅ CHANGED
+      await db.query('UPDATE news SET views = views + 1 WHERE newsID = ?', [id]);
       article.views = Number(article.views || 0) + 1;
     }
 
     return article;
   }
 
-  // ✅ ADDED: Get news by admin
+  // Get news by admin
   static async getByAdmin(adminUserID) {
     const id = this._toInt(adminUserID);
     if (!id) return [];
@@ -184,15 +182,14 @@ class News {
 
   // ---------- writes ----------
   static async create(newsData) {
-    const adminUserID = this._toInt(newsData?.adminUserID);  // ✅ ADDED: Required adminUserID
+    const adminUserID = this._toInt(newsData?.adminUserID);
     const title = this._toString(newsData?.title);
     const content = this._toString(newsData?.content);
 
-    if (!adminUserID) throw new Error('adminUserID is required');  // ✅ ADDED
+    if (!adminUserID) throw new Error('adminUserID is required');
     if (!title) throw new Error('Title is required');
     if (!content) throw new Error('Content is required');
 
-    // ✅ ADDED: Validate admin exists
     const adminExists = await this._adminExists(adminUserID);
     if (!adminExists) {
       throw new Error('Admin user not found');
@@ -214,13 +211,13 @@ class News {
 
     const [result] = await db.query(
       `INSERT INTO news (adminUserID, title, category, excerpt, content, author, published_date, is_published)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,  // ✅ CHANGED: Added adminUserID
-      [adminUserID, title, category, excerpt, content, author, published_date, is_published]  // ✅ CHANGED
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [adminUserID, title, category, excerpt, content, author, published_date, is_published]
     );
 
     return {
-      newsID: result.insertId,  // ✅ CHANGED: id → newsID
-      adminUserID,  // ✅ ADDED
+      newsID: result.insertId,
+      adminUserID,
       title,
       category,
       excerpt,
@@ -232,11 +229,10 @@ class News {
     };
   }
 
-  static async update(newsID, newsData) {  // ✅ CHANGED: parameter id → newsID
-    const id = this._validateId(newsID);  // ✅ CHANGED: use newsID
+  static async update(newsID, newsData) {
+    const id = this._validateId(newsID);
 
-    // Get existing so partial updates are safe
-    const [existingRows] = await db.query('SELECT * FROM news WHERE newsID = ?', [id]);  // ✅ CHANGED
+    const [existingRows] = await db.query('SELECT * FROM news WHERE newsID = ?', [id]);
     const existing = existingRows[0];
     if (!existing) throw new Error('News article not found');
 
@@ -277,7 +273,7 @@ class News {
     const [result] = await db.query(
       `UPDATE news
        SET title = ?, category = ?, excerpt = ?, content = ?, author = ?, published_date = ?, is_published = ?
-       WHERE newsID = ?`,  // ✅ CHANGED: id → newsID (adminUserID cannot be updated)
+       WHERE newsID = ?`,
       [title, category, excerpt, content, author, published_date, is_published, id]
     );
 
@@ -285,14 +281,14 @@ class News {
       throw new Error('News article not found');
     }
 
-    // IMPORTANT: do NOT increment views on update fetch
+    // Do not increment views on update
     return this.getById(id, { incrementViews: false });
   }
 
-  static async delete(newsID) {  // ✅ CHANGED: parameter id → newsID
-    const id = this._validateId(newsID);  // ✅ CHANGED: use newsID
+  static async delete(newsID) {
+    const id = this._validateId(newsID);
 
-    const [result] = await db.query('DELETE FROM news WHERE newsID = ?', [id]);  // ✅ CHANGED
+    const [result] = await db.query('DELETE FROM news WHERE newsID = ?', [id]);
 
     if (result.affectedRows === 0) {
       throw new Error('News article not found');
@@ -301,11 +297,11 @@ class News {
     return { success: true, message: 'News article deleted successfully' };
   }
 
-  static async togglePublish(newsID) {  // ✅ CHANGED: parameter id → newsID
-    const id = this._validateId(newsID);  // ✅ CHANGED: use newsID
+  static async togglePublish(newsID) {
+    const id = this._validateId(newsID);
 
     const [result] = await db.query(
-      'UPDATE news SET is_published = NOT is_published WHERE newsID = ?',  // ✅ CHANGED
+      'UPDATE news SET is_published = NOT is_published WHERE newsID = ?',
       [id]
     );
 
@@ -332,7 +328,7 @@ class News {
        JOIN admin_users a ON n.adminUserID = a.adminUserID
        WHERE n.is_published = TRUE
          AND (n.title LIKE ? ESCAPE '\\\\' OR n.content LIKE ? ESCAPE '\\\\')
-       ORDER BY n.published_date DESC, n.created_at DESC`,  // ✅ CHANGED: Added admin join
+       ORDER BY n.published_date DESC, n.created_at DESC`,
       [like, like]
     );
 

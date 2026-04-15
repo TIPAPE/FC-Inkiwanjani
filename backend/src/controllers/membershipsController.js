@@ -15,11 +15,7 @@ const isValidEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase());
 };
 
-/**
- * POST /api/memberships
- * Registers a new fan club membership.
- * Creates a user account if email doesn't exist, then creates membership record.
- */
+// Create membership
 exports.create = async (req, res) => {
   try {
     const full_name = safeTrim(req.body?.full_name);
@@ -42,7 +38,7 @@ exports.create = async (req, res) => {
     );
     const membership_fee = settingsRows.length ? toFloat(settingsRows[0].setting_value) || 50 : 50;
 
-    // Check if user already exists with this email (optional linkage)
+    // Check if user exists
     let userID = null;
     const [existingUsers] = await db.query(
       'SELECT userID FROM users WHERE email = ? LIMIT 1',
@@ -52,10 +48,8 @@ exports.create = async (req, res) => {
     if (existingUsers.length) {
       userID = existingUsers[0].userID;
     }
-    // If no user exists, we store NULL for userID — membership is standalone.
-    // Users who later sign up with the same email can be linked manually by admin.
 
-    // Check if membership already exists for this email
+    // Check if membership already exists
     const [existingMemberships] = await db.query(
       'SELECT membershipID FROM memberships WHERE email = ? AND is_active = TRUE LIMIT 1',
       [email]

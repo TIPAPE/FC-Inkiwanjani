@@ -13,14 +13,9 @@ const sendSuccess = (res, status, data, message) =>
 const toInt = (v) => { const n = Number.parseInt(v, 10); return Number.isFinite(n) ? n : null; };
 const safeTrim = (v) => (typeof v === 'string' ? v.trim() : v);
 
-/**
- * GET /api/gallery
- * Returns all gallery items ordered by upload date descending.
- * Supports pagination via ?page=1&limit=20 query params.
- */
+// Get all gallery items (with pagination support)
 exports.getAll = async (req, res) => {
   try {
-    // Check if pagination is requested
     const usePagination = req.query.page || req.query.limit;
 
     if (usePagination) {
@@ -46,10 +41,7 @@ exports.getAll = async (req, res) => {
   }
 };
 
-/**
- * GET /api/gallery/:id
- * Returns a single gallery item by ID.
- */
+// Get gallery item by ID
 exports.getById = async (req, res) => {
   try {
     const id = toInt(req.params.id);
@@ -70,10 +62,7 @@ exports.getById = async (req, res) => {
   }
 };
 
-/**
- * GET /api/gallery/match/:matchID
- * Returns gallery items for a specific match.
- */
+// Get gallery items by match ID
 exports.getByMatch = async (req, res) => {
   try {
     const matchID = toInt(req.params.matchID);
@@ -94,13 +83,7 @@ exports.getByMatch = async (req, res) => {
   }
 };
 
-// ================== ADMIN ENDPOINTS ==================
-
-/**
- * POST /api/admin/gallery/upload
- * Uploads an image file and creates a gallery entry.
- * Uses multer middleware for file handling.
- */
+// Admin: upload image
 exports.uploadImage = async (req, res) => {
   try {
     const adminUserID = req.user.id;
@@ -110,7 +93,7 @@ exports.uploadImage = async (req, res) => {
 
     if (!req.file) return sendError(res, 400, 'No image file provided');
 
-    // Build the URL path to the uploaded file
+    // Build file URL path
     const image_url = `/uploads/gallery/${req.file.filename}`;
     const upload_date = new Date().toISOString().slice(0, 10);
 
@@ -136,10 +119,7 @@ exports.uploadImage = async (req, res) => {
   }
 };
 
-/**
- * POST /api/admin/gallery
- * Creates a new gallery entry (without file upload — uses image_url from body).
- */
+// Admin: create gallery entry (without file upload)
 exports.create = async (req, res) => {
   try {
     const adminUserID = req.user.id;
@@ -173,10 +153,7 @@ exports.create = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/admin/gallery/:id
- * Removes a gallery entry.
- */
+// Admin: delete gallery entry
 exports.deleteGallery = async (req, res) => {
   try {
     const id = toInt(req.params.id);

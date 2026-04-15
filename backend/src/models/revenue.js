@@ -8,7 +8,7 @@ class Revenue {
     return String(value).trim();
   }
 
-  static _toInt(value, fallback = null) {  // ✅ ADDED: helper for IDs
+  static _toInt(value, fallback = null) {
     const n = Number.parseInt(value, 10);
     return Number.isFinite(n) && n > 0 ? n : fallback;
   }
@@ -68,7 +68,7 @@ class Revenue {
   // ---------- CRUD ----------
   static async getAll() {
     const [rows] = await db.query(
-      'SELECT * FROM revenue ORDER BY transaction_date DESC, revenueID DESC'  // ✅ CHANGED: id → revenueID
+      'SELECT * FROM revenue ORDER BY transaction_date DESC, revenueID DESC'
     );
     return rows;
   }
@@ -76,7 +76,7 @@ class Revenue {
   static async getBySource(source) {
     const s = this._validateSource(source);
     const [rows] = await db.query(
-      'SELECT * FROM revenue WHERE source = ? ORDER BY transaction_date DESC, revenueID DESC',  // ✅ CHANGED
+      'SELECT * FROM revenue WHERE source = ? ORDER BY transaction_date DESC, revenueID DESC',
       [s]
     );
     return rows;
@@ -93,7 +93,7 @@ class Revenue {
     const [rows] = await db.query(
       `SELECT * FROM revenue
        WHERE transaction_date BETWEEN ? AND ?
-       ORDER BY transaction_date DESC, revenueID DESC`,  // ✅ CHANGED
+       ORDER BY transaction_date DESC, revenueID DESC`,
       [start, end]
     );
 
@@ -101,7 +101,7 @@ class Revenue {
   }
 
   static async create(revenueData) {
-    const bookingID = revenueData?.bookingID ? this._toInt(revenueData.bookingID) : null;  // ✅ ADDED: Optional bookingID
+    const bookingID = revenueData?.bookingID ? this._toInt(revenueData.bookingID) : null;
     const source = this._validateSource(revenueData?.source);
     const amount = this._toMoney(revenueData?.amount);
 
@@ -119,13 +119,13 @@ class Revenue {
     // transaction_date is DATE so we store 'YYYY-MM-DD'
     const [result] = await db.query(
       `INSERT INTO revenue (bookingID, source, amount, description, transaction_date)
-       VALUES (?, ?, ?, ?, ?)`,  // ✅ CHANGED: Added bookingID
+       VALUES (?, ?, ?, ?, ?)`,
       [bookingID, source, amount, description, transaction_date]
     );
 
     return {
-      revenueID: result.insertId,  // ✅ CHANGED: id → revenueID
-      bookingID,  // ✅ ADDED
+      revenueID: result.insertId,
+      bookingID,
       source,
       amount,
       description,
@@ -133,10 +133,10 @@ class Revenue {
     };
   }
 
-  static async update(revenueID, revenueData) {  // ✅ CHANGED: parameter id → revenueID
-    const id = this._validateId(revenueID);  // ✅ CHANGED
+  static async update(revenueID, revenueData) {
+    const id = this._validateId(revenueID);
 
-    const bookingID = revenueData?.bookingID !== undefined ? this._toInt(revenueData.bookingID) : undefined;  // ✅ ADDED
+    const bookingID = revenueData?.bookingID !== undefined ? this._toInt(revenueData.bookingID) : undefined;
     const source = this._validateSource(revenueData?.source);
     const amount = this._toMoney(revenueData?.amount);
 
@@ -152,7 +152,7 @@ class Revenue {
       throw new Error('transaction_date must be a valid date (YYYY-MM-DD)');
     }
 
-    // ✅ CHANGED: Handle optional bookingID update
+    // Handle optional bookingID update
     let query, params;
     if (bookingID !== undefined) {
       query = `UPDATE revenue
@@ -172,14 +172,14 @@ class Revenue {
       throw new Error('Revenue record not found');
     }
 
-    const [rows] = await db.query('SELECT * FROM revenue WHERE revenueID = ?', [id]);  // ✅ CHANGED
+    const [rows] = await db.query('SELECT * FROM revenue WHERE revenueID = ?', [id]);
     return rows[0] || null;
   }
 
-  static async delete(revenueID) {  // ✅ CHANGED: parameter id → revenueID
-    const id = this._validateId(revenueID);  // ✅ CHANGED
+  static async delete(revenueID) {
+    const id = this._validateId(revenueID);
 
-    const [result] = await db.query('DELETE FROM revenue WHERE revenueID = ?', [id]);  // ✅ CHANGED
+    const [result] = await db.query('DELETE FROM revenue WHERE revenueID = ?', [id]);
 
     if (result.affectedRows === 0) {
       throw new Error('Revenue record not found');

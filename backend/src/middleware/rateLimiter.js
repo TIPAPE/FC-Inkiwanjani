@@ -1,20 +1,9 @@
-// backend/src/middleware/rateLimiter.js
-
-/**
- * Simple in-memory rate limiter.
- *
- * Tracks request counts per IP in a Map with automatic expiry.
- * Not suitable for multi-instance deployments (use Redis for that).
- *
- * Usage:
- *   const limiter = rateLimiter({ windowMs: 60000, max: 100 });
- *   router.post('/login', limiter, authController.login);
- */
+// Rate limiter middleware
 
 function rateLimiter({ windowMs = 60_000, max = 100, message = 'Too many requests, please try again later.' } = {}) {
   const store = new Map();
 
-  // Clean up expired entries every minute
+  // Periodic cleanup of expired entries
   const cleanup = setInterval(() => {
     const now = Date.now();
     for (const [key, value] of store.entries()) {
@@ -22,7 +11,7 @@ function rateLimiter({ windowMs = 60_000, max = 100, message = 'Too many request
     }
   }, 60_000);
 
-  // Prevent cleanup from keeping process alive
+  // Allow cleanup to not block process exit
   if (cleanup.unref) cleanup.unref();
 
   return (req, res, next) => {
@@ -57,12 +46,14 @@ function rateLimiter({ windowMs = 60_000, max = 100, message = 'Too many request
   };
 }
 
-// Pre-configured limiters for common use cases
+// Pre-configured limiters
 const loginLimiter = rateLimiter({ windowMs: 15 * 60_000, max: 10, message: 'Too many login attempts. Please wait 15 minutes.' });
 const bookingLimiter = rateLimiter({ windowMs: 5 * 60_000, max: 20, message: 'Too many booking attempts. Please wait 5 minutes.' });
 const commentLimiter = rateLimiter({ windowMs: 60_000, max: 10, message: 'Too many comments. Please wait a minute.' });
 const pollLimiter = rateLimiter({ windowMs: 60_000, max: 5, message: 'Too many votes. Please wait a minute.' });
 const generalLimiter = rateLimiter({ windowMs: 60_000, max: 200 });
+const resetLimiter = rateLimiter({ windowMs: 60 * 60_000, max: 5, message: 'Too many reset requests. Please wait 1 hour.' });
+const resetVerifyLimiter = rateLimiter({ windowMs: 15 * 60_000, max: 10, message: 'Too many verification attempts. Please wait 15 minutes.' });
 
 module.exports = rateLimiter;
 module.exports.loginLimiter = loginLimiter;
@@ -70,3 +61,5 @@ module.exports.bookingLimiter = bookingLimiter;
 module.exports.commentLimiter = commentLimiter;
 module.exports.pollLimiter = pollLimiter;
 module.exports.generalLimiter = generalLimiter;
+module.exports.resetLimiter = resetLimiter;
+module.exports.resetVerifyLimiter = resetVerifyLimiter;
