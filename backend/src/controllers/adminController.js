@@ -1,10 +1,10 @@
 // backend/src/controllers/adminController.js
-const Player = require('../models/Player');
-const Match = require('../models/Match');
-const News = require('../models/News');
-const Booking = require('../models/Booking');
-const Revenue = require('../models/Revenue');
-const Settings = require('../models/Settings');
+const Player = require('../models/player');
+const Match = require('../models/match');
+const News = require('../models/news');
+const Booking = require('../models/booking');
+const Revenue = require('../models/revenue');
+const Settings = require('../models/settings');
 const { parsePagination, sendPaginated } = require('../utils/pagination');
 
 // Helpers
