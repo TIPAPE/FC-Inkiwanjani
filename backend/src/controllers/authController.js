@@ -6,14 +6,10 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// Halt startup if JWT secret is missing
 if (!JWT_SECRET) {
   console.error('FATAL: JWT_SECRET is not set in .env');
 }
 
-/**
- * Generates a signed JWT for the given user.
- */
 const generateToken = (user, isAdmin = false) => {
   if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not configured on the server');
@@ -36,20 +32,6 @@ const generateToken = (user, isAdmin = false) => {
   );
 };
 
-/**
- * Returns a safe (no password hash) user object.
- *
- * BUG FIX: The frontend (authService / authStorage) reads response.token and
- * response.user at the top level — e.g. `const { token, user } = await authService.login()`.
- * The old controller nested these inside `data: { token, user }`, so the frontend
- * always received undefined for both fields, meaning:
- *   - authStorage.saveAuth(undefined, undefined) stored nothing.
- *   - AdminScreen's token state was always null.
- *   - logout() called authService.logout(null), so the Authorization header
- *     was never sent and the server never blocklisted the token.
- *
- * Fix: return token and user at the top level of the response body.
- */
 const sanitizeUser = (user, isAdmin = false) => {
   if (!user) return null;
 
@@ -92,7 +74,6 @@ exports.signupUser = async (req, res) => {
     const user = await User.create({ username, email, password, full_name, phone });
     const token = generateToken(user, false);
 
-    // ✅ FIX: token and user returned at top level, not nested under `data`
     return res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -137,7 +118,6 @@ exports.signupAdmin = async (req, res) => {
     const admin = await AdminUser.create({ username, email, password, full_name, role: finalRole });
     const token = generateToken(admin, true);
 
-    // ✅ FIX: token and user returned at top level
     return res.status(201).json({
       success: true,
       message: 'Admin registered successfully',
@@ -162,43 +142,27 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('[LOGIN DEBUG] Login attempt received:');
-    console.log('[LOGIN DEBUG]   Email:', email);
-    console.log('[LOGIN DEBUG]   Password length:', password?.length);
-
     if (!email || !password) {
-      console.log('[LOGIN DEBUG]   ❌ Missing email or password');
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
     let user = await AdminUser.findByEmail(email);
     let isAdmin = true;
-    console.log('[LOGIN DEBUG]   Searched admin_users, found:', user ? 'YES' : 'NO');
 
     if (!user) {
       user = await User.findByEmail(email);
       isAdmin = false;
-      console.log('[LOGIN DEBUG]   Searched users, found:', user ? 'YES' : 'NO');
     }
 
     if (!user) {
-      console.log('[LOGIN DEBUG]   ❌ No user found with email:', email);
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
-
-    console.log('[LOGIN DEBUG]   User found, isAdmin:', isAdmin);
-    console.log('[LOGIN DEBUG]   User ID:', isAdmin ? user.adminUserID : user.userID);
-    console.log('[LOGIN DEBUG]   User email:', user.email);
-    console.log('[LOGIN DEBUG]   Password hash exists:', !!user.password_hash);
 
     const isPasswordValid = isAdmin
       ? await AdminUser.verifyPassword(password, user.password_hash)
       : await User.verifyPassword(password, user.password_hash);
 
-    console.log('[LOGIN DEBUG]   Password valid:', isPasswordValid);
-
     if (!isPasswordValid) {
-      console.log('[LOGIN DEBUG]   ❌ Invalid password for user:', email);
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
@@ -210,10 +174,7 @@ exports.login = async (req, res) => {
     }
 
     const token = generateToken(user, isAdmin);
-    console.log('[LOGIN DEBUG]   ✅ Login successful, token generated');
 
-    // ✅ FIX: token and user returned at top level so the frontend can read them
-    // directly: const { token, user } = await authService.login(email, password)
     return res.status(200).json({
       success: true,
       message: 'Login successful',
@@ -232,7 +193,7 @@ exports.login = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// POST /api/auth/logout  (protected by auth middleware)
+// POST /api/auth/logout
 // ─────────────────────────────────────────────
 const { addToBlocklist } = require('../middleware/tokenBlocklist');
 
@@ -259,7 +220,7 @@ exports.logout = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// GET /api/auth/verify  (protected by auth middleware)
+// GET /api/auth/verify
 // ─────────────────────────────────────────────
 exports.verifyToken = async (req, res) => {
   try {
@@ -274,11 +235,11 @@ exports.verifyToken = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
-// GET /api/auth/profile  (protected by auth middleware)
+// GET /api/auth/profile
 // ─────────────────────────────────────────────
 exports.getProfile = async (req, res) => {
   try {
-    const userId  = req.user.id;
+    const userId = req.user.id;
     const isAdmin = !!req.user.isAdmin || req.user.type === 'admin';
 
     const user = isAdmin
@@ -296,5 +257,85 @@ exports.getProfile = async (req, res) => {
   } catch (error) {
     console.error('Get profile error:', error);
     return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ─────────────────────────────────────────────
+// PUT /api/auth/profile
+// ─────────────────────────────────────────────
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const isAdmin = req.user.isAdmin || req.user.type === 'admin';
+    const { full_name, phone } = req.body;
+
+    // Validation
+    if (full_name !== undefined && (typeof full_name !== 'string' || full_name.trim().length < 2)) {
+      return res.status(400).json({ success: false, message: 'Full name must be at least 2 characters' });
+    }
+    if (phone !== undefined && phone !== null && phone.trim() !== '') {
+      const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,3}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,4}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        return res.status(400).json({ success: false, message: 'Invalid phone number format' });
+      }
+    }
+
+    let updatedUser;
+    if (isAdmin) {
+      updatedUser = await AdminUser.updateProfile(userId, { full_name: full_name?.trim(), phone: phone?.trim() });
+    } else {
+      updatedUser = await User.updateProfile(userId, { full_name: full_name?.trim(), phone: phone?.trim() });
+    }
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// ─────────────────────────────────────────────
+// POST /api/auth/change-password
+// ─────────────────────────────────────────────
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const isAdmin = req.user.isAdmin || req.user.type === 'admin';
+    const { current_password, new_password } = req.body;
+
+    if (!current_password || !new_password) {
+      return res.status(400).json({ success: false, message: 'Current password and new password are required' });
+    }
+
+    if (new_password.length < 8) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
+    }
+
+    let success;
+    if (isAdmin) {
+      success = await AdminUser.changePassword(userId, { current_password, new_password });
+    } else {
+      success = await User.changePassword(userId, { current_password, new_password });
+    }
+
+    if (!success) {
+      return res.status(400).json({ success: false, message: 'Current password is incorrect or user not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

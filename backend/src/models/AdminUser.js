@@ -5,7 +5,6 @@ const bcrypt = require('bcryptjs');
 const BCRYPT_ROUNDS = 10;
 const ALLOWED_ROLES = ['super_admin', 'admin', 'editor'];
 
-// Validation limits aligned with DB schema VARCHAR lengths
 const VALIDATION = {
   username: { min: 3, max: 50, pattern: /^[a-zA-Z0-9_]+$/ },
   email:    { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
@@ -13,14 +12,12 @@ const VALIDATION = {
   fullName: { min: 2, max: 100 },
 };
 
-// Removes the password_hash field from a database row before returning
 const stripHash = (row) => {
   if (!row) return null;
   const { password_hash, ...safe } = row;
   return safe;
 };
 
-// Validates and sanitizes all fields required for admin creation
 const validateCreate = ({ username, email, password, full_name }) => {
   const u = (username || '').trim();
   const e = (email || '').trim().toLowerCase();
@@ -51,7 +48,6 @@ const validateCreate = ({ username, email, password, full_name }) => {
 
 class AdminUser {
 
-  // Create a new admin user
   static async create({ username, email, password, full_name, role } = {}) {
     const clean = validateCreate({ username, email, password, full_name });
 
@@ -86,7 +82,6 @@ class AdminUser {
     }
   }
 
-  // Find an active admin by email (includes password_hash for login)
   static async findByEmail(email) {
     if (!email) return null;
     const [rows] = await pool.execute(
@@ -96,7 +91,6 @@ class AdminUser {
     return rows[0] || null;
   }
 
-  // Find an active admin by username (includes password_hash for login)
   static async findByUsername(username) {
     if (!username) return null;
     const [rows] = await pool.execute(
@@ -106,11 +100,10 @@ class AdminUser {
     return rows[0] || null;
   }
 
-  // Find an active admin by ID (excludes password_hash)
   static async findById(adminUserID) {
     if (!adminUserID) return null;
     const [rows] = await pool.execute(
-      `SELECT adminUserID, username, email, full_name, role, is_active, last_login, created_at
+      `SELECT adminUserID, username, email, full_name, role, last_login, created_at
        FROM admin_users
        WHERE adminUserID = ? AND is_active = TRUE
        LIMIT 1`,
@@ -119,7 +112,6 @@ class AdminUser {
     return rows[0] || null;
   }
 
-  // Get all active admins (for super_admin management)
   static async findAll() {
     const [rows] = await pool.execute(
       `SELECT adminUserID, username, email, full_name, role, last_login, created_at
@@ -130,13 +122,11 @@ class AdminUser {
     return rows;
   }
 
-  // Compare plain-text password against stored hash
   static async verifyPassword(plainPassword, hashedPassword) {
     if (!plainPassword || !hashedPassword) return false;
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  // Update last_login timestamp
   static async updateLastLogin(adminUserID) {
     if (!adminUserID) return false;
     await pool.execute(
@@ -146,7 +136,6 @@ class AdminUser {
     return true;
   }
 
-  // Update admin profile (full_name and/or role)
   static async updateProfile(adminUserID, { full_name, role } = {}) {
     if (!adminUserID) throw new Error('adminUserID is required');
 
@@ -176,7 +165,6 @@ class AdminUser {
     return this.findById(adminUserID);
   }
 
-  // Change admin password after verifying current one
   static async changePassword(adminUserID, { current_password, new_password } = {}) {
     if (!adminUserID) throw new Error('adminUserID is required');
     if (!current_password || !new_password) {
@@ -213,13 +201,14 @@ class AdminUser {
     return true;
   }
 
-  // Soft-delete an admin; prevents deactivation of last super_admin
-  static async deactivate(adminUserID) {
+  
+  static async delete(adminUserID) {
     if (!adminUserID) throw new Error('adminUserID is required');
 
     const target = await this.findById(adminUserID);
-    if (!target) throw new Error('Admin user not found or already inactive');
+    if (!target) throw new Error('Admin user not found');
 
+    // Prevent deleting the last super_admin
     if (target.role === 'super_admin') {
       const [rows] = await pool.execute(
         `SELECT COUNT(*) AS cnt
@@ -228,15 +217,25 @@ class AdminUser {
       );
       const superAdminCount = rows[0]?.cnt ?? 0;
       if (superAdminCount <= 1) {
-        throw new Error('Cannot deactivate the last super_admin. Promote another admin first.');
+        throw new Error('Cannot delete the last super_admin. Promote another admin first.');
       }
     }
 
-    await pool.execute(
-      'UPDATE admin_users SET is_active = FALSE WHERE adminUserID = ?',
+    const [result] = await pool.execute(
+      'DELETE FROM admin_users WHERE adminUserID = ?',
       [adminUserID]
     );
+
+    if (result.affectedRows === 0) {
+      throw new Error('Admin user not found');
+    }
+
     return true;
+  }
+
+  // Legacy alias – keep for compatibility, but use delete for hard removal
+  static async deactivate(adminUserID) {
+    return this.delete(adminUserID);
   }
 }
 

@@ -11,44 +11,34 @@ class Player {
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  // Get all active players
+  // Get all active players (no longer needed if we hard delete, but keep for now)
   static async getAll() {
     const [rows] = await db.query(
-      'SELECT * FROM players WHERE is_active = TRUE ORDER BY jersey_number ASC'
+      'SELECT * FROM players ORDER BY jersey_number ASC'
     );
     return rows;
   }
 
-  // Get paginated list of active players
   static async getAllPaginated(offset, limit) {
     const [rows] = await db.query(
-      'SELECT * FROM players WHERE is_active = TRUE ORDER BY jersey_number ASC LIMIT ? OFFSET ?',
+      'SELECT * FROM players ORDER BY jersey_number ASC LIMIT ? OFFSET ?',
       [limit, offset]
     );
     return rows;
   }
 
-  // Get total count of active players
   static async getCount() {
-    const [rows] = await db.query(
-      'SELECT COUNT(*) as total FROM players WHERE is_active = TRUE'
-    );
+    const [rows] = await db.query('SELECT COUNT(*) as total FROM players');
     return rows[0]?.total || 0;
   }
 
-  // Get player by ID (active only)
   static async getById(playerID) {
     const id = this._toInt(playerID, null);
     if (!id) return null;
-
-    const [rows] = await db.query(
-      'SELECT * FROM players WHERE playerID = ? AND is_active = TRUE',
-      [id]
-    );
+    const [rows] = await db.query('SELECT * FROM players WHERE playerID = ?', [id]);
     return rows[0] || null;
   }
 
-  // Create new player
   static async create(playerData) {
     try {
       const name = this._toString(playerData?.name);
@@ -88,7 +78,6 @@ class Player {
     }
   }
 
-  // Update player stats (active only)
   static async updateStats(playerID, stats) {
     const id = this._toInt(playerID, null);
     if (!id) throw new Error('Player not found');
@@ -102,7 +91,7 @@ class Player {
     const [result] = await db.query(
       `UPDATE players
        SET goals = ?, assists = ?, appearances = ?, yellow_cards = ?, red_cards = ?
-       WHERE playerID = ? AND is_active = TRUE`,
+       WHERE playerID = ?`,
       [goals, assists, appearances, yellow_cards, red_cards, id]
     );
 
@@ -113,7 +102,6 @@ class Player {
     return this.getById(id);
   }
 
-  // Update player basic info (active only)
   static async update(playerID, playerData) {
     try {
       const id = this._toInt(playerID, null);
@@ -133,12 +121,12 @@ class Player {
       if (matchID !== undefined) {
         query = `UPDATE players
                  SET name = ?, jersey_number = ?, position = ?, age = ?, matchID = ?
-                 WHERE playerID = ? AND is_active = TRUE`;
+                 WHERE playerID = ?`;
         params = [name, jersey_number, position, age, matchID, id];
       } else {
         query = `UPDATE players
                  SET name = ?, jersey_number = ?, position = ?, age = ?
-                 WHERE playerID = ? AND is_active = TRUE`;
+                 WHERE playerID = ?`;
         params = [name, jersey_number, position, age, id];
       }
 
@@ -157,60 +145,48 @@ class Player {
     }
   }
 
-  // Soft delete player
+  // ✅ HARD DELETE – permanently remove player from database
   static async delete(playerID) {
     const id = this._toInt(playerID, null);
     if (!id) throw new Error('Player not found');
 
-    const [result] = await db.query(
-      'UPDATE players SET is_active = FALSE WHERE playerID = ? AND is_active = TRUE',
-      [id]
-    );
+    const [result] = await db.query('DELETE FROM players WHERE playerID = ?', [id]);
 
     if (result.affectedRows === 0) {
       throw new Error('Player not found');
     }
 
-    return { success: true, message: 'Player removed successfully' };
+    return { success: true, message: 'Player permanently deleted' };
   }
 
-  // Get top scorers (active only)
   static async getTopScorers(limit = 5) {
-    // Force safe integer + cap
     const safeLimit = Math.min(Math.max(this._toInt(limit, 5), 1), 50);
-
-    // Using a literal LIMIT avoids certain edge cases with prepared LIMIT on some setups
     const [rows] = await db.query(
       `SELECT * FROM players
-       WHERE is_active = TRUE
        ORDER BY goals DESC, assists DESC, appearances DESC
        LIMIT ${safeLimit}`
     );
     return rows;
   }
 
-  // Get players by position (active only)
   static async getByPosition(position) {
     const pos = this._toString(position);
     if (!pos) return [];
-
     const [rows] = await db.query(
       `SELECT * FROM players
-       WHERE position = ? AND is_active = TRUE
+       WHERE position = ?
        ORDER BY jersey_number ASC`,
       [pos]
     );
     return rows;
   }
 
-  // Get players by match
   static async getByMatch(matchID) {
     const id = this._toInt(matchID, null);
     if (!id) return [];
-
     const [rows] = await db.query(
       `SELECT * FROM players
-       WHERE matchID = ? AND is_active = TRUE
+       WHERE matchID = ?
        ORDER BY jersey_number ASC`,
       [id]
     );

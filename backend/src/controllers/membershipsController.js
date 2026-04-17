@@ -64,11 +64,20 @@ exports.create = async (req, res) => {
     const join_date = new Date().toISOString().slice(0, 10);
     const expiry_date = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+    // Insert membership
     const [result] = await db.query(
       `INSERT INTO memberships (userID, full_name, email, phone, membership_number, membership_fee, join_date, expiry_date, is_active)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
       [userID, full_name, email, phone, membership_number, membership_fee, join_date, expiry_date]
     );
+
+    // ✅ Create revenue record for the membership fee
+    const description = `Membership fee for ${full_name} (${membership_number})`;
+    await db.query(
+      `INSERT INTO revenue (source, amount, description, transaction_date)
+       VALUES ('membership', ?, ?, ?)`,
+      [membership_fee, description, join_date]
+    ).catch(err => console.error('Failed to auto-create revenue for membership:', err));
 
     return sendSuccess(res, 201, {
       membershipID: result.insertId,
