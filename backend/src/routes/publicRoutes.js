@@ -2,11 +2,11 @@
 const express = require('express');
 const router = express.Router();
 
-const Player = require('../models/Player');
-const Match = require('../models/Match');
-const News = require('../models/News');
-const Settings = require('../models/Settings');
-const Booking = require('../models/Booking');
+const Player = require('../models/player');
+const Match = require('../models/match');
+const News = require('../models/news');
+const Settings = require('../models/settings');
+const Booking = require('../models/booking');
 const Gallery = require('../models/Gallery');
 const db = require('../config/database');
 const auth = require('../middleware/auth');
