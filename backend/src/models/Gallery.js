@@ -11,7 +11,6 @@ class Gallery {
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  // Get all gallery items
   static async getAll() {
     const [rows] = await db.query(
       `SELECT g.*, a.full_name as admin_name
@@ -22,7 +21,6 @@ class Gallery {
     return rows;
   }
 
-  // Get paginated gallery items
   static async getAllPaginated(offset, limit) {
     const [rows] = await db.query(
       `SELECT g.*, a.full_name as admin_name
@@ -35,13 +33,11 @@ class Gallery {
     return rows;
   }
 
-  // Get total count of gallery items
   static async getCount() {
     const [rows] = await db.query('SELECT COUNT(*) as total FROM gallery');
     return rows[0]?.total || 0;
   }
 
-  // Get gallery item by ID
   static async getById(galleryID) {
     const id = this._toInt(galleryID);
     if (!id) return null;
@@ -56,7 +52,6 @@ class Gallery {
     return rows[0] || null;
   }
 
-  // Get gallery items by match
   static async getByMatch(matchID) {
     const mId = this._toInt(matchID);
     if (!mId) return [];
@@ -72,7 +67,6 @@ class Gallery {
     return rows;
   }
 
-  // Create gallery entry
   static async create({ adminUserID, title, description, image_url, upload_date, matchID }) {
     if (!adminUserID || !title) {
       throw new Error('adminUserID and title are required');
@@ -97,7 +91,6 @@ class Gallery {
     };
   }
 
-  // Delete gallery entry
   static async delete(galleryID) {
     const id = this._toInt(galleryID);
     if (!id) throw new Error('Invalid gallery id');

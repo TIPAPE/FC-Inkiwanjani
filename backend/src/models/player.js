@@ -11,7 +11,6 @@ class Player {
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  // Get all active players (no longer needed if we hard delete, but keep for now)
   static async getAll() {
     const [rows] = await db.query(
       'SELECT * FROM players ORDER BY jersey_number ASC'

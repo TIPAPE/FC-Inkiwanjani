@@ -762,14 +762,14 @@ exports.createAdmin = async (req, res) => {
 
 /**
  * DELETE /api/admin/admins/:id
- * Soft-deletes (deactivates) an admin account. Cannot delete super_admin.
+ * Hard-deletes an admin account. Cannot delete super_admin.
  */
 exports.deleteAdmin = async (req, res) => {
   try {
     const AdminUser = require('../models/AdminUser');
     const { id } = req.params;
     if (!id || isNaN(Number(id))) return sendError(res, 400, 'Invalid admin ID');
-    await AdminUser.deactivate(Number(id));
+    await AdminUser.delete(Number(id));
     return sendSuccess(res, 200, 'Admin account deleted successfully');
   } catch (error) {
     console.error('Delete admin error:', error);
