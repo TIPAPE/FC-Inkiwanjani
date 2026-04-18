@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "FC Inkiwanjani",
+    "slug": "fc-inkiwanjani",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fcinkiwanjani.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/fcinkiwanjani-logo.png",
+        "backgroundColor": "#FFD700"
+      },
+      "package": "com.fcinkiwanjani.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiUrl": "http://localhost:5000/api"
+    }
+  }
+}
